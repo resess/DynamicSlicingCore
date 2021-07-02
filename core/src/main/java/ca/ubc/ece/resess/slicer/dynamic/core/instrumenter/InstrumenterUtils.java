@@ -110,7 +110,7 @@ public class InstrumenterUtils {
         Local tmpString = Jimple.v().newLocal("tmpString", RefType.v("java.lang.String"));
         b.getLocals().add(tmpString);
 
-        SootMethod printerMethod = Scene.v().getSootClass("MandolineLogger").getMethod("void println(java.lang.String)");
+        SootMethod printerMethod = Scene.v().getSootClass("DynamicSlicingLogger").getMethod("void println(java.lang.String)");
         // SootMethod printerMethod = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
         
         
@@ -265,7 +265,7 @@ public class InstrumenterUtils {
         SootMethod sbAppendString = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>");
         SootMethod sbAppendLong = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(long)>");
         SootMethod sbToString = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.String toString()>");
-        SootMethod printerMethod = Scene.v().getSootClass("MandolineLogger").getMethod("void flush(java.lang.String)");
+        SootMethod printerMethod = Scene.v().getSootClass("DynamicSlicingLogger").getMethod("void flush(java.lang.String)");
         Unit temp = null;
 
 
@@ -329,7 +329,7 @@ public class InstrumenterUtils {
     public static void addPrint(Unit u, PatchingChain<Unit> units, Body b, AddedLocals addedLocals, SootClass cls, SootMethod mtd, Flags flags, Set<Unit> instrumentedUnits , Map<Unit, Long> taggedUnits, InstrumentationCounter globalLineCounter){
         long counter = globalLineCounter.inc();
         taggedUnits.put(u, counter);
-        // for (SootMethod s:  Scene.v().getSootClass("MandolineLogger").getMethods()) {
+        // for (SootMethod s:  Scene.v().getSootClass("DynamicSlicingLogger").getMethods()) {
         //     logger.info("Method: {}", s);
         // }
 
@@ -339,7 +339,7 @@ public class InstrumenterUtils {
         SootMethod sbAppendString = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>");
         SootMethod sbAppendLong = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(long)>");
         SootMethod sbToString = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.String toString()>");
-        SootMethod printerMethod = Scene.v().getSootClass("MandolineLogger").getMethod("void println(java.lang.String)");
+        SootMethod printerMethod = Scene.v().getSootClass("DynamicSlicingLogger").getMethod("void println(java.lang.String)");
         // SootMethod printerMethod = Scene.v().getSootClass("org.tinylog.Logger").getMethod("void info(java.lang.Object)");
         // SootMethod printerMethod = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
         Unit temp = null;
@@ -443,7 +443,7 @@ public class InstrumenterUtils {
             SootMethod sbAppendString = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>");
             SootMethod sbAppendLong = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(long)>");
             SootMethod sbToString = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.String toString()>");
-            // SootMethod printerMethod = Scene.v().getSootClass("MandolineLogger").getMethod("void println(java.lang.String)");
+            // SootMethod printerMethod = Scene.v().getSootClass("DynamicSlicingLogger").getMethod("void println(java.lang.String)");
             SootMethod printerMethod = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
 
             if (addedLocals.startTimer==null && flags.timeTracking && flags.isCallbackOrThread) {
