@@ -7,6 +7,7 @@ import ca.ubc.ece.resess.slicer.dynamic.core.graph.DynamicControlFlowGraph;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.AssignStmt;
@@ -102,7 +103,7 @@ public class BackwardStaticFieldAnalysis {
         int pos = startUnit.getLineNo()-1;
         boolean found = false;
 
-        while (pos > 0) {
+        while (pos > -1) {
             StatementInstance si = icdg.mapNoUnits(pos);
             if (si == null) {
                 pos--;
