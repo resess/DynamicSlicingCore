@@ -5,18 +5,26 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Base64;
+import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.zip.InflaterOutputStream;
 
-
-
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Rule;
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Terminal;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Symbol;
+
 
 public class Parser {
 
@@ -44,6 +52,7 @@ public class Parser {
         } catch (IOException | ParseException e) {
             AnalysisLogger.warn(true, "Cannot read static-log file! {}", e);
         }
+        List<String> splitLine = new ArrayList<>();
         String lastSlicingLine = "";
         try (BufferedReader br = new BufferedReader(new FileReader(traceName))) {
             String t;
@@ -57,8 +66,14 @@ public class Parser {
                 } catch (ArrayIndexOutOfBoundsException e){
                     continue;
                 }
-                for (String s: t.split("-")) {
-                    
+                if (t.startsWith(" ZLIB: ")) {
+                    t = decompress(t.split(" ZLIB: ")[1]);
+                }
+                List<String> chunk = Arrays.asList(t.split("-"));
+                // AnalysisLogger.log(true, "Len before {}", chunk.size());
+                chunk = compressTrace(chunk);
+                // AnalysisLogger.log(true, "Len after {}", chunk.size());
+                for (String s: chunk) {
                     Long fieldId = null;
                     Long lineNum = null;
                     Long threadNum = -1L;
@@ -78,6 +93,7 @@ public class Parser {
                     }
                     addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldLine);
                 }
+                AnalysisLogger.warn(true, "Expanded trace length {}", listTraces.size());
             }
         } catch (IOException e) {
             AnalysisLogger.warn(true, "Cannot read trace file! {}", e);
@@ -132,9 +148,7 @@ public class Parser {
                 Traces tr = new Traces();
                 if(tokens.length < 4) continue;
                 tr._lineNo = Long.valueOf(tokens[0]);
-                tr._class = "";
                 tr._method = tokens[1];
-                tr._type = "__inst__";
                 tr._ins = tokens[2];
                 tr._tid = Long.valueOf(tokens[3]);
                 if(tokens.length > 4) {
@@ -145,6 +159,82 @@ public class Parser {
         } catch (NullPointerException e) {
             // Ignored
         }
+    }
+
+    private static String decompress(String compressed64) {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try {
+            byte[] compressed = Base64.getDecoder().decode(compressed64);
+            OutputStream ios = new InflaterOutputStream(os);
+            ios.write(compressed);
+            ios.close();
+            os.close();
+        } catch (Exception e) {
+            AnalysisLogger.warn(true, "Cannot decompress line {}", compressed64);
+        }
+        byte[] decompressedBArray = os.toByteArray();
+        return new String(decompressedBArray);
+    }
+
+    private static List<String> compressTrace(List<String> splitLines) {
+        Rule firstRule = new Rule();
+        int i;
+        // Reset number of rules and Hashtable.
+        Rule.numRules = 0;
+        Map<Symbol, Symbol> diagramTable = new HashMap<>();
+        Map<String, String> symbolMap = new HashMap<>();
+        for (i = 0; i < splitLines.size(); i++){
+          String val = splitLines.get(i).replace(":", "0");
+          symbolMap.put(val, splitLines.get(i));
+          firstRule.last().insertAfter(new Terminal(Long.valueOf(val)), diagramTable);
+          firstRule.last().getP().check(diagramTable);
+        }
+        // AnalysisLogger.log(true, "Rules: {}", firstRule.getRules());
+        List<String> compressedString = new ArrayList<>();
+        for (String uncompressed: firstRule.getRules().get("R0")) {
+            String lastStr = "";
+            if (!compressedString.isEmpty()) {
+                lastStr = compressedString.get(compressedString.size()-1);
+            }
+            if (!lastStr.equals(uncompressed)) {
+                compressedString.add(uncompressed);
+            }
+        }
+
+        // AnalysisLogger.log(true, "Compressed: {}", compressedString);
+
+        List<String> resultStr = expand(firstRule, symbolMap, compressedString);
+        
+        
+        // AnalysisLogger.log(true, "Expanded compressed: {}", resultStr);
+        return resultStr;
+    }
+
+    private static List<String> expand(Rule firstRule, Map<String, String> symbolMap, List<String> compressedString) {
+        List<String> resultStr = new ArrayList<>();
+        for (String compressed: compressedString) {
+            if (compressed.startsWith("R") && firstRule.getRules().containsKey(compressed)) {
+                List<String> expandedList = firstRule.getRules().get(compressed);
+                for (String str: expandedList) {
+                    if (str.startsWith("R")) {
+                        resultStr.addAll(expand(firstRule, symbolMap, firstRule.getRules().get(str)));
+                    } else {
+                        if (symbolMap.get(str) == null) {
+                            AnalysisLogger.log(true, "Cannot find str {}", str);
+                        } else {
+                            resultStr.add(symbolMap.get(str));
+                        }
+                    }
+                }
+            } else {
+                if (symbolMap.get(compressed) == null) {
+                    AnalysisLogger.log(true, "Cannot find comp {}", compressed);
+                } else {
+                    resultStr.add(symbolMap.get(compressed));
+                }
+            }
+        }
+        return resultStr;
     }
 
 }

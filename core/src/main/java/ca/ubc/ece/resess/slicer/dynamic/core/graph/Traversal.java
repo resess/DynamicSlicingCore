@@ -378,16 +378,30 @@ public class Traversal {
         if (icdg.getSetterCallbackMap().containsKey(new Pair<>(caller.getMethod(), caller.getUnit()))) {
             inc = 1;
         }
-        for(Value arg: args) {
-            for (AccessPath ap: aliasSet) {
-                if (ap.baseEquals(arg.toString())) {
-                    AccessPath aliasedArg = new AccessPath("$r"+String.valueOf(argPos+inc), arg.getType(), ap.getUsedLine(), ap.getDefinedLine(), caller).add(ap.getFields(), ap.getFieldsTypes(), caller);
-                    aliasedArgs.add(aliasedArg);
-                    removedSet.add(ap);
-                }
+
+        StatementInstance source = getCalledChunk(caller.getLineNo()).getRetIu();
+        Map<Integer, AccessPath> argParamMap = getArgParamMap(source, caller, aliasSet);
+
+        // for(Value arg: args) {
+        //     for (AccessPath ap: aliasSet) {
+        //         if (ap.baseEquals(arg.toString())) {
+        //             AccessPath aliasedArg = new AccessPath("$r"+String.valueOf(argPos+inc), arg.getType(), ap.getUsedLine(), ap.getDefinedLine(), caller).add(ap.getFields(), ap.getFieldsTypes(), caller);
+        //             aliasedArgs.add(aliasedArg);
+        //             removedSet.add(ap);
+        //         }
+        //     }
+        //     argPos += 1;
+        // }
+
+        for (argPos = 0; argPos < args.size(); argPos++) {
+            AccessPath param = argParamMap.get(argPos);
+            if (param != null) {
+                AccessPath p = new AccessPath(args.get(argPos).toString(), args.get(argPos).getType(), param.getUsedLine(), param.getDefinedLine(), caller);
+                p.add(param.getFields(), param.getFieldsTypes(), caller);
+                aliasedArgs.add(p);
             }
-            argPos += 1;
         }
+        
         for (AccessPath ap: aliasSet) {
             if (ap.isStaticField()) {
                 aliasedArgs.add(ap);

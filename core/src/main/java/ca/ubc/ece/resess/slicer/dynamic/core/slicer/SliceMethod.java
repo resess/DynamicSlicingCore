@@ -186,7 +186,7 @@ public class SliceMethod {
     }
 
     public StatementSet localReachingDef(StatementInstance iu, AccessPath ap, StatementMap chunk, AliasSet usedVars, boolean frameworkModel){
-        // AnalysisLogger.log(Constants.DEBUG, "Getting local def for {} with chunk {}", ap, chunk);
+        AnalysisLogger.log(Constants.DEBUG, "Getting local def for {} with chunk {}", ap, chunk);
         StatementSet defSet = new StatementSet();
         if (ap.isEmpty() || chunk == null) {
             return defSet;
@@ -198,12 +198,12 @@ public class SliceMethod {
             if (localFound) {
                 break;
             }
-            // AnalysisLogger.log(Constants.DEBUG, "Inspecting {}", u);
+            AnalysisLogger.log(Constants.DEBUG, "Inspecting {}", u);
             if (u.getLineNo() >= iu.getLineNo() || u.getUnit()==null) {
                 continue;
             }
             for (ValueBox def: u.getUnit().getDefBoxes()) {
-                // AnalysisLogger.log(Constants.DEBUG, "Inspecting def {}", def);
+                AnalysisLogger.log(Constants.DEBUG, "Inspecting def {}", def);
                 if(def.getValue() instanceof Local) {
                     if (ap.baseEquals(def.getValue().toString())) {
                         backwardDefVars.add(new Pair<>(u, new AccessPath(def.getValue().toString(), def.getValue().getType(), AccessPath.NOT_USED, u.getLineNo(), u)));
@@ -241,6 +241,15 @@ public class SliceMethod {
                     if (FrameworkModel.localWrapper(u, ap, defSet, usedVars)) {
                         // pass
                     }
+                }
+            }
+            if (invokeExpr != null && !traversal.isFrameworkMethod(u)) {
+                AliasSet aliasesInCalled = traversal.changeScopeToCalled(u, new AliasSet(ap)).getO1();
+                for (AccessPath varInCalled: aliasesInCalled) {
+                    StatementMap calledChunk = traversal.getCalledChunk(u.getLineNo()).getChunk();
+                    StatementSet defsInCalled = localReachingDef(iu, varInCalled, calledChunk, usedVars, frameworkModel);
+                    AnalysisLogger.log(Constants.DEBUG, "Added defs from called {}", defsInCalled);
+                    defSet.addAll(defsInCalled);
                 }
             }
         }

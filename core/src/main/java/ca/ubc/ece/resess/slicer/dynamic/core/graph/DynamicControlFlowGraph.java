@@ -96,7 +96,7 @@ public class DynamicControlFlowGraph {
         AnalysisLogger.log(true, "callbackMethods: {}", callbackMethods.toString());
 
         mapInstancesToMethods(tr, mapTrace, mapThreadId, fieldMap);
-
+        tr.clear();
         addControlFlowsWithinMethods(mapTrace);
         
         
@@ -324,18 +324,18 @@ public class DynamicControlFlowGraph {
             Map<String, Long> mapThreadId, Map<Integer, Long> fieldMap) {
         int i=0;
         for (Traces t: tr) {
-            if(!mapTrace.containsKey(t._method+t._class)) {
+            if(!mapTrace.containsKey(t._method)) {
                 Map <Integer, String> temp = new LinkedHashMap<>();
                 temp.put(i, t._ins);
-                mapTrace.put(t._method+t._class, temp);
+                mapTrace.put(t._method, temp);
             } else {
-                Map <Integer, String> temp = mapTrace.get(t._method+t._class);
+                Map <Integer, String> temp = mapTrace.get(t._method);
                 temp.put(i, t._ins);
-                mapTrace.put(t._method+t._class, temp);
+                mapTrace.put(t._method, temp);
             }
             if (t._tid != -1L) {
                 threadIds.add(t._tid);
-                mapThreadId.put(t._method+t._class, t._tid);
+                mapThreadId.put(t._method, t._tid);
             }
             if (t._field != null) {
                 fieldMap.put(i, t._field);
