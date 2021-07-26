@@ -2,6 +2,6 @@
 
 rm DynamicSlicingLogger.jar
 export JAVA_HOME="/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home"
-javac DynamicSlicingLogger.java DynamicSlicingLoggerShutdown.java DynamicSlicingLoggerWriter.java
-jar cf DynamicSlicingLogger.jar DynamicSlicingLogger.class DynamicSlicingLoggerShutdown.class DynamicSlicingLoggerWriter.class
-rm DynamicSlicingLogger.class DynamicSlicingLoggerShutdown.class DynamicSlicingLoggerWriter.class
+javac DynamicSlicingLogger.java DynamicSlicingLoggerShutdown.java DynamicSlicingLoggerWriter.java DynamicSlicingLoggerExceptionHandler.java
+jar cf DynamicSlicingLogger.jar DynamicSlicingLogger.class DynamicSlicingLoggerShutdown.class DynamicSlicingLoggerWriter.class DynamicSlicingLoggerExceptionHandler.class
+rm DynamicSlicingLogger.class DynamicSlicingLoggerShutdown.class DynamicSlicingLoggerWriter.class DynamicSlicingLoggerExceptionHandler.class

@@ -70,8 +70,10 @@ public class Parser {
                     t = decompress(t.split(" ZLIB: ")[1]);
                 }
                 List<String> chunk = Arrays.asList(t.split("-"));
+                // AnalysisLogger.log(true, "Chunk before {}", chunk);
                 // AnalysisLogger.log(true, "Len before {}", chunk.size());
-                chunk = compressTrace(chunk);
+                // chunk = compressTrace(chunk); // TODO: buggy, need fixing and speeding up before intergartion
+                // AnalysisLogger.log(true, "Chunk after {}", chunk);
                 // AnalysisLogger.log(true, "Len after {}", chunk.size());
                 for (String s: chunk) {
                     Long fieldId = null;
@@ -97,6 +99,10 @@ public class Parser {
             }
         } catch (IOException e) {
             AnalysisLogger.warn(true, "Cannot read trace file! {}", e);
+        }
+        AnalysisLogger.log(true, "Expanded traces");
+        for (Traces t: listTraces) {
+            System.out.println(t);
         }
         
         AnalysisLogger.log(true, "Done parsing");
@@ -189,7 +195,7 @@ public class Parser {
           firstRule.last().insertAfter(new Terminal(Long.valueOf(val)), diagramTable);
           firstRule.last().getP().check(diagramTable);
         }
-        // AnalysisLogger.log(true, "Rules: {}", firstRule.getRules());
+        AnalysisLogger.log(true, "Rules: {}", firstRule.getRules());
         List<String> compressedString = new ArrayList<>();
         for (String uncompressed: firstRule.getRules().get("R0")) {
             String lastStr = "";
