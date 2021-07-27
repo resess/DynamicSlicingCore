@@ -4,6 +4,7 @@ public class DynamicSlicingLoggerShutdown extends Thread {
 
     @Override
     public void run() {
+        System.out.println("Shutting down VM");
         DynamicSlicingLogger.flush();
     }
 }

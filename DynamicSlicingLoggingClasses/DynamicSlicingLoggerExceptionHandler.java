@@ -6,6 +6,7 @@ public class DynamicSlicingLoggerExceptionHandler implements Thread.UncaughtExce
 
     @Override
     public void uncaughtException(Thread th, Throwable ex) {
+        System.out.println("Slicer caught exception: " + ex.toString());
         DynamicSlicingLogger.flush();
     }
 }

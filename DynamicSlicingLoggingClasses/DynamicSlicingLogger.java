@@ -17,7 +17,7 @@ public class DynamicSlicingLogger{
 
     // public static void println(String e) {
     //     synchronized (queue) {
-    //         System.out.println("SLICING: ZLIB: "+e);
+    //         System.out.println("SLICING: "+e);
     //     }
     // }
 
