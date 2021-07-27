@@ -95,16 +95,10 @@ public class Parser {
                     }
                     addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldLine);
                 }
-                AnalysisLogger.warn(true, "Expanded trace length {}", listTraces.size());
             }
         } catch (IOException e) {
             AnalysisLogger.warn(true, "Cannot read trace file! {}", e);
         }
-        AnalysisLogger.log(true, "Expanded traces");
-        for (Traces t: listTraces) {
-            System.out.println(t);
-        }
-        
         AnalysisLogger.log(true, "Done parsing");
         return listTraces;
     }
