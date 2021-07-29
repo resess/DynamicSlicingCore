@@ -317,7 +317,7 @@ public class SliceMethod {
         int callerPos = traversal.getCaller(iu.getLineNo());
         AliasSet apSet = new AliasSet();
         apSet.add(ap);
-        AliasSet taintedParams = traversal.changeScopeToCaller(iu, icdg.getMapKeyUnits().get(icdg.getMapNoKey().get(callerPos)), apSet);
+        AliasSet taintedParams = traversal.changeScopeToCaller(iu, icdg.mapNoUnits(callerPos), apSet);
         if (taintedParams == null || taintedParams.isEmpty()) {
             return defSet;
         }
