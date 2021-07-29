@@ -2,6 +2,7 @@ package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -89,6 +90,9 @@ public class SlicePrinter {
                 g.add(newNode.link(
                     to(node(String.valueOf(sliceNode.getJavaSourceFile() + ":" + sliceNode.getJavaSourceLineNo()) + ": " + destStr)).with(edgeStyle, Label.of(edgeStr))));
             }
+
+
+
             // List<Node> clusterNodes = new ArrayList<>();
             // if (clusters.containsKey(sourceNode.getMethod())) {
             //     clusterNodes = clusters.get(sourceNode.getMethod());
@@ -114,6 +118,48 @@ public class SlicePrinter {
             Graphviz.fromGraph(g).rasterize(Rasterizer.builtIn("pdf")).toFile(new File(outDir + File.separator + "slice-graph.pdf"));
         } catch (IOException e) {
             AnalysisLogger.warn(true, "IOException when writing slice graph file: {}", e.getMessage());
+        }
+    }
+
+    public static void printSliceWithDependencies(String outDir, DynamicSlice dynamicSlice) {
+        List<String> toPrint = new ArrayList<>();
+        toPrint.add("Slice:");
+        toPrint.add("---------------------");
+        for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: dynamicSlice) {
+            String edge = dynamicSlice.getEdges(entry.getO1().getO1().getLineNo(), entry.getO2().getO1().getLineNo());
+            StatementInstance sliceNode = entry.getO1().getO1();
+            AccessPath sliceEdge = entry.getO2().getO2();
+            StatementInstance sourceNode = entry.getO2().getO1();
+
+            String sourceStr = sourceNode.getJavaSourceFile() + ":" + sourceNode.getJavaSourceLineNo();
+            
+            String destStr = sliceNode.getUnit().toString().replace("\\", "");
+            if (destStr.contains("goto")) {
+                destStr = destStr.split("goto")[0];
+            }
+            destStr = "(" + sliceNode.getJavaSourceFile() + ":" + sliceNode.getJavaSourceLineNo() + ")  " + destStr;
+            String edgeStr = "";
+            if (edge.equals("data")) {
+                edgeStr = ":" + sliceEdge.getPathString();
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(destStr);
+            sb.append(" <--");
+            sb.append(edge);
+            sb.append(edgeStr);
+            sb.append("-- ");
+            sb.append(sourceStr);
+            String newLine = sb.toString();
+            if (!toPrint.contains(newLine)) {
+                toPrint.add(newLine);
+            }
+        }
+        String fileName = outDir + File.separator + "slice-dependencies.log";
+        try {
+            FileUtils.writeLines(new File(fileName), toPrint);
+        } catch (IOException e) {
+            AnalysisLogger.warn(true, "Exception when writing slice: {}", e);
         }
     }
 
