@@ -31,6 +31,7 @@ import guru.nidi.graphviz.attribute.Style;
 import guru.nidi.graphviz.attribute.Rank.RankDir;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.engine.GraphvizException;
 import guru.nidi.graphviz.engine.Rasterizer;
 import guru.nidi.graphviz.model.Graph;
 import guru.nidi.graphviz.model.LinkSource;
@@ -116,8 +117,8 @@ public class SlicePrinter {
         try {
             // Graphviz.fromGraph(g).render(Format.SVG).toFile(new File(outDir + File.separator + "slice-graph.svg"));
             Graphviz.fromGraph(g).rasterize(Rasterizer.builtIn("pdf")).toFile(new File(outDir + File.separator + "slice-graph.pdf"));
-        } catch (IOException e) {
-            AnalysisLogger.warn(true, "IOException when writing slice graph file: {}", e.getMessage());
+        } catch (IOException | GraphvizException e) {
+            AnalysisLogger.warn(true, "Exception when writing slice graph file: {}", e.getMessage());
         }
     }
 
