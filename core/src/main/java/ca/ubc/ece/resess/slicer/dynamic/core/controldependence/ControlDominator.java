@@ -84,12 +84,11 @@ public class ControlDominator{
                 cug = new EnhancedUnitGraph(stmt.getMethod().getActiveBody());
                 computedGraphs.put(stmt.getMethod(), cug);
             }
-            
+
             HashMutablePDG pdg = new HashMutablePDG(cug);
             for(PDGRegion r: pdg.getPDGRegions()) {
                 PDGNode p = r.getCorrespondingPDGNode();
                 if (r.getUnits().contains(stmt.getUnit())) {
-                    // AnalysisLogger.log(true, "Units here are: {}", r.getUnits());
                     if (r.getUnits().toString().contains(":= @caughtexception") || r.getUnits().toString().contains("goto [?= throw")) {
                         candidateIu = previousTraceLine(icdg, stmt.getLineNo());
                     } else {

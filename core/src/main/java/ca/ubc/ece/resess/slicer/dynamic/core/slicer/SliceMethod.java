@@ -322,7 +322,6 @@ public class SliceMethod {
             return defSet;
         }
         if (taintedParams.size() > 1) {
-            // AnalysisLogger.log(Constants.DEBUG, "TaintedParams: {}", taintedParams);
             throw new Error("More than one definition of a local variable!");
         }
         StatementInstance nextCaller = null;

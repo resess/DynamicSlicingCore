@@ -28,9 +28,11 @@ public class Graph {
       edgeSet.put(edgeVertices, edge);
       Set<Edge> mappedEdges = edgeMapFromSource.getOrDefault(source, new HashSet<>());
       mappedEdges.add(edge);
+      edgeMapFromSource.put(source, mappedEdges);
 
       mappedEdges = edgeMapFromDestination.getOrDefault(destination, new HashSet<>());
       mappedEdges.add(edge);
+      edgeMapFromDestination.put(destination, mappedEdges);
     }
   }
 
@@ -44,9 +46,11 @@ public class Graph {
 
       Set<Edge> mappedEdges = edgeMapFromSource.getOrDefault(edge.getSource(), new HashSet<>());
       mappedEdges.remove(edge);
+      edgeMapFromSource.put(edge.getSource(), mappedEdges);
 
       mappedEdges = edgeMapFromDestination.getOrDefault(edge.getDestination(), new HashSet<>());
-      mappedEdges.add(edge);
+      mappedEdges.remove(edge);
+      edgeMapFromDestination.put(edge.getDestination(), mappedEdges);
     }
 
   }

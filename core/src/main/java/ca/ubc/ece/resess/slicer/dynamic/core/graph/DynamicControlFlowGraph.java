@@ -76,11 +76,6 @@ public class DynamicControlFlowGraph extends Graph{
 
 
     public DynamicControlFlowGraph createDCFG(List<TraceStatement> tr) {
-        int len = tr.size();
-        AnalysisLogger.log(true, "Trace length: {}", len);
-        AnalysisLogger.log(true, "setterCallbackMap: {}", setterCallbackMap.toString());
-        AnalysisLogger.log(true, "callbackMethods: {}", callbackMethods.toString());
-
         Chain<SootClass> chain = Scene.v().getApplicationClasses();
         Map<String, SootMethod> allMethods = createMethodsMap(chain);
         Map<SootMethod, Map <String, Unit>> unitStringsCache = new HashMap<>();
@@ -93,11 +88,6 @@ public class DynamicControlFlowGraph extends Graph{
         long timeStamp = System.currentTimeMillis();
         while (traceIterator.hasNext()) {
             int lineNumber = traceIterator.nextIndex();
-            if (lineNumber%100000==0) {
-                long newTimeStamp = System.currentTimeMillis();
-                AnalysisLogger.log(true, "Progress: {}/{} ({}), time: {}", lineNumber, tr.size(),  lineNumber*100/tr.size(),(newTimeStamp - timeStamp)/1e6);
-                timeStamp = newTimeStamp;
-            }
             TraceStatement traceStatement = traceIterator.next();
             String methodName = traceStatement.getMethod();
             SootMethod mt = allMethods.get(methodName);
@@ -118,10 +108,6 @@ public class DynamicControlFlowGraph extends Graph{
             }
             oldMethod = mt;
             Body body = mt.getActiveBody();
-            
-            // AnalysisLogger.log(true, "Checking trace statement: {}", traceStatement);
-            // AnalysisLogger.log(true, "Method name: {}", methodName);
-            // AnalysisLogger.log(true, "Method body: {}", body);
 
             Map<String, Pair<SootMethod, Unit>> settersInThisMethod = new HashMap<>();
             Map<String, Pair<SootMethod, Unit>> threadStartersInThisMethod = new HashMap<>();
@@ -147,18 +133,11 @@ public class DynamicControlFlowGraph extends Graph{
                 }
             }
         }
-        AnalysisLogger.log(true, "Done creating statements");
         cleanGraphFromFalseEdges(connectedThreads);
-        AnalysisLogger.log(true, "Cleanded graph");
         fixThreadsGraph();
-        AnalysisLogger.log(true, "Fixed threads");
         removeReturnEdges();
-        AnalysisLogger.log(true, "Removed return edges");
         savePossibleCallback();
-        AnalysisLogger.log(true, "Saved possible callbacks");
         saveStaticFields();
-        AnalysisLogger.log(true, "Saved static field");
-        AnalysisLogger.log(true, "Graph: {}", super.toString());
         return this;
     }
 
@@ -170,29 +149,29 @@ public class DynamicControlFlowGraph extends Graph{
     private StatementInstance createStatementInstance(SootMethod mt, Map<String, Unit> unitString,
             Map<String, Pair<SootMethod, Unit>> settersInThisMethod,
             Map<String, Pair<SootMethod, Unit>> threadStartersInThisMethod, TraceStatement traceStatement, int lineNumber) {
-        int leastDistance = Integer.MAX_VALUE;
-        // AnalysisLogger.log(true, "Inspecting stmt {}", traceStatement.getInstruction());
-        // AnalysisLogger.log(true, "Unit string is {}", unitString);
         StatementInstance createdStatement = null;
         if(unitString.containsKey(traceStatement.getInstruction())) {
             createdStatement = matchStatementInstanceToTraceLine(mt, unitString, settersInThisMethod, threadStartersInThisMethod, traceStatement, lineNumber);
         }
 
         if (createdStatement == null) {
-            createdStatement = matchStatementInstanceToClosestTraceLine(mt, unitString, traceStatement, lineNumber, leastDistance);
+            createdStatement = matchStatementInstanceToClosestTraceLine(mt, unitString, traceStatement, lineNumber);
         }
         return createdStatement;
     }
 
     private StatementInstance matchStatementInstanceToClosestTraceLine(SootMethod mt, Map<String, Unit> unitString, 
-                    TraceStatement traceStatement, int lineNumber, int leastDistance) {
+                    TraceStatement traceStatement, int lineNumber) {
 
+        int leastDistance = Integer.MAX_VALUE;
         String second = traceStatement.getInstruction();
         Unit closestUnit = null;
         for(String us: unitString.keySet()) {
             String first = us;
-            if (first.contains("if") && first.contains("goto") && second.contains("if") && second.contains("goto")) {
+            if (first.contains("if") && first.contains("goto")) {
                 first = first.substring(0, first.indexOf("goto"));
+            }
+            if (second.contains("if") && second.contains("goto")) {
                 second = second.substring(0, second.indexOf("goto"));
             }
             if (StringUtils.getCommonPrefix(first, second).length() > 0) {
@@ -210,7 +189,6 @@ public class DynamicControlFlowGraph extends Graph{
         StatementInstance createdStatement = null;
         if (closestUnit != null) {
             createdStatement = new StatementInstance(mt, closestUnit, lineNumber, traceStatement.getThreadId(), traceStatement.getFieldAddr(), closestUnit.getJavaSourceStartLineNumber(), mt.getDeclaringClass().getFilePath());
-            // AnalysisLogger.log(true, "Created statement {}", iu);
             addStatement(createdStatement);
         } else {
             AnalysisLogger.warn(true, "Cannot create instruction {}", traceStatement);
@@ -226,7 +204,6 @@ public class DynamicControlFlowGraph extends Graph{
         Unit unit = unitString.get(us);
         try {
             createdStatement = new StatementInstance(mt, unit, lineNumber, traceStatement.getThreadId(), traceStatement.getFieldAddr(), unit.getJavaSourceStartLineNumber(), mt.getDeclaringClass().getFilePath());
-            // AnalysisLogger.log(true, "Created statement {}", iu);
             addStatement(createdStatement);
             if (settersInThisMethod.containsKey(us)) {
                 setterLineMap.put(settersInThisMethod.get(us), lineNumber);
@@ -268,7 +245,7 @@ public class DynamicControlFlowGraph extends Graph{
                 setEdgeType(source, lineNumber, EdgeType.CALL_EDGE);
             }
         } catch (Exception e) {
-            AnalysisLogger.log(true, "Exception: {}", e);
+            // pass
         }
     }
 
@@ -449,9 +426,8 @@ public class DynamicControlFlowGraph extends Graph{
         if (predecessorListOf(unitsInThread.get(i).getLineNo()).isEmpty()) {
             connectToCaller(unitsInThread, i);
         } else if (predecessorListOf(unitsInThread.get(i).getLineNo()).size() == 1) {
-            int posCaller = predecessorListOf(unitsInThread.get(i).getLineNo()).iterator().next();
-            Edge e = getEdge(posCaller, unitsInThread.get(i).getLineNo());
-            if (e != null && !e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
+            int posCaller = predecessorListOf(unitsInThread.get(i).getLineNo()).get(0);
+            if (!unitsInThread.get(i).getMethod().equals(mapNoUnits(posCaller).getMethod()) ) {
                 connectToCaller(unitsInThread, i);
             }
         }
@@ -508,7 +484,6 @@ public class DynamicControlFlowGraph extends Graph{
                     if (!prev.getMethod().getDeclaringClass().getName().startsWith(Constants.ANDROID_LIBS)) {
                         removeExistingEdges(lineNo, removed);
                         addCallEdge(lineNo, prev);
-                        removeAllEdges(removed);
                         return true;
                     }
                 } else {

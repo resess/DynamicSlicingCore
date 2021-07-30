@@ -286,7 +286,7 @@ public class Traversal {
         for (Integer pred: preds) {
             Edge e = icdg.getEdge(pred, pos);
             try {
-                if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
+                if (e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
                     pos = pred;
                     break;
                 }
@@ -456,7 +456,6 @@ public class Traversal {
 
 
     public AliasSet changeScope(AliasSet originalAliasSet, StatementInstance source, StatementInstance destination) {
-        // AnalysisLogger.log(true, "Changing scope: {}-{}", destination, originalAliasSet);
         AliasSet translatedSet = originalAliasSet;
         if (!source.methodEquals(destination)) {
             if (source.getLineNo() > destination.getLineNo()) {
@@ -465,7 +464,6 @@ public class Traversal {
                 translatedSet = changeScopeToCalled(source, originalAliasSet).getO1();
             }
         }
-        // AnalysisLogger.log(true, "Changed scope: {}-{}", translatedSet);
         return translatedSet;
     }
 
@@ -475,7 +473,6 @@ public class Traversal {
         Integer argIndex = 0;
         for (Unit uu: source.getMethod().getActiveBody().getUnits()) {
             if (uu instanceof IdentityStmt) {
-                // AnalysisLogger.log(true, "Inspecting: {}", uu);
                 if (uu.toString().contains("@this") || uu.toString().contains("@parameter")) {
                     addToParamMap(aliasSet, argParamMap, argIndex, uu);
                     argIndex++;
@@ -490,9 +487,7 @@ public class Traversal {
 
     private void addToParamMap(AliasSet aliasSet, Map<Integer, AccessPath> argParamMap, Integer argIndex, Unit uu) {
         String base = uu.getDefBoxes().get(0).getValue().toString();
-        // AnalysisLogger.log(true, "Type: {}", uu.getDefBoxes().get(0).getValue().getType());
         for (AccessPath ap: aliasSet) {
-            // AnalysisLogger.log(true, "Comparing {} to {}", ap, base);
             if (ap.startsWith(base)) {
                 argParamMap.put(argIndex, ap);
             }
