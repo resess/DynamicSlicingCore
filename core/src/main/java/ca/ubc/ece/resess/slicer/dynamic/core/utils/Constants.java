@@ -2,9 +2,6 @@ package ca.ubc.ece.resess.slicer.dynamic.core.utils;
 
 public class Constants {
 
-    public static final double CALL_EDGE = -1.0;
-    public static final double RETURN_EDGE = -2.0;
-    public static final double FLOW_EDGE = 2.0;
     public static final Integer FORWARD = 1;
     public static final Integer BACKWARD = 2;
     public static final Integer ACCESS_PATH_LENGTH = 10;

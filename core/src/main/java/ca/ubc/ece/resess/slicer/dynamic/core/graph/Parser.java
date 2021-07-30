@@ -16,6 +16,7 @@ import java.util.zip.InflaterOutputStream;
 
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Rule;
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Terminal;
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.Statement;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 
 import org.json.simple.JSONArray;
@@ -35,12 +36,12 @@ public class Parser {
         throw new IllegalStateException("Utility class");
       }
 
-    public static List <Traces> readFile(String fileName, String staticLogFile) {
+    public static List <TraceStatement> readFile(String fileName, String staticLogFile) {
         return expandTrace(staticLogFile, fileName);
     }
 
-    public static List <Traces> expandTrace(String staticLogFile, String traceName) {
-        List <Traces> listTraces = new ArrayList<>();
+    public static List <TraceStatement> expandTrace(String staticLogFile, String traceName) {
+        List <TraceStatement> listTraces = new ArrayList<>();
         Map<Long, List<String>> logMap = new HashMap<>();
         JSONParser parser = new JSONParser();
         try {
@@ -95,6 +96,7 @@ public class Parser {
                     }
                     addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldLine);
                 }
+                AnalysisLogger.log(true, "Expanded trace size: {}", listTraces.size());
             }
         } catch (IOException e) {
             AnalysisLogger.warn(true, "Cannot read trace file! {}", e);
@@ -139,20 +141,22 @@ public class Parser {
         return threadNum;
     }
 
-    private static void addToExpandedTrace(List <Traces> listTraces, Map<Long, List<String>> logMap, Long lineNum,
+    private static void addToExpandedTrace(List<TraceStatement> listTraces, Map<Long, List<String>> logMap, Long lineNum,
             Long threadNum, String fieldLine) {
         try {
             for (String line : logMap.get(lineNum)) {
                 line = line + DELEMITER + threadNum.toString() + fieldLine;
                 String [] tokens = line.split(DELEMITER);
-                Traces tr = new Traces();
+                TraceStatement tr = new TraceStatement();
                 if(tokens.length < 4) continue;
-                tr._lineNo = Long.valueOf(tokens[0]);
-                tr._method = tokens[1];
-                tr._ins = tokens[2];
-                tr._tid = Long.valueOf(tokens[3]);
+                Long lineNumber = Long.valueOf(tokens[0]);
+                String method = tokens[1];
+                String instruction = tokens[2];
+                Statement statement = Statement.getStatement(lineNumber, method, instruction);
+                tr.setStatement(statement);
+                tr.setThreadId(Long.valueOf(tokens[3]));
                 if(tokens.length > 4) {
-                    tr._field = Long.valueOf(tokens[4]);
+                    tr.setFieldAddr(Long.valueOf(tokens[4]));
                 }
                 listTraces.add(tr);
             }

@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultWeightedEdge;
 
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
@@ -17,7 +15,6 @@ import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
-import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.AssignStmt;
@@ -39,7 +36,7 @@ public class Traversal {
 
     public Set<StatementInstance> previousNodes(StatementInstance iu) {
         Set<StatementInstance> previous = new LinkedHashSet<>();
-        List<Integer> nodes = Graphs.predecessorListOf(icdg.getGraph(), iu.getLineNo());
+        List<Integer> nodes = icdg.predecessorListOf(iu.getLineNo());
         for (Integer node: nodes) {
             StatementInstance next = icdg.mapNoUnits(node);
             if (next != null) {
@@ -51,7 +48,7 @@ public class Traversal {
 
     public Set<StatementInstance> nextNodes(StatementInstance iu) {
         Set<StatementInstance> following = new LinkedHashSet<>();
-        List<Integer> nodes = Graphs.successorListOf(icdg.getGraph(), iu.getLineNo());
+        List<Integer> nodes = icdg.successorListOf(iu.getLineNo());
         for (Integer node: nodes) {
             StatementInstance next = icdg.mapNoUnits(node);
             if (next != null) {
@@ -82,7 +79,7 @@ public class Traversal {
         if (cachedChunk != null) {
             return cachedChunk;
         }
-        StatementInstance iu = icdg.getMapKeyUnits().get(icdg.getMapNoKey().get(pos));
+        StatementInstance iu = icdg.mapNoUnits(pos);
         if (iu == null) {
             return null;
         }
@@ -91,7 +88,7 @@ public class Traversal {
         boolean done = false;
         int newPos = 0;
         while(pos>=0 && !done) {
-            iu = icdg.getMapKeyUnits().get(icdg.getMapNoKey().get(pos));
+            iu = icdg.mapNoUnits(pos);
             if (iu!=null) {
                 if(iu.getMethod().getSignature().equals(currentMethod)) {
                     chunk.put(iu.getUnitId(), iu);
@@ -111,10 +108,10 @@ public class Traversal {
     }
 
     private int previousFlowEdge(int pos, int newPos) {
-        List<Integer> preds = Graphs.predecessorListOf(icdg.getGraph(), pos);
+        List<Integer> preds = icdg.predecessorListOf(pos);
         for (Integer pred: preds) {
-            DefaultWeightedEdge e = icdg.getGraph().getEdge(pred, pos);
-            if (icdg.getGraph().getEdgeWeight(e) == Constants.FLOW_EDGE) {
+            Edge e = icdg.getEdge(pred, pos);
+            if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
                 newPos = pred;
             }
         }
@@ -151,7 +148,7 @@ public class Traversal {
         int newPos = 0;
         String currentMethod = iu.getMethod().getSignature();
         while(pos>=0) {
-            iu = icdg.getMapKeyUnits().get(icdg.getMapNoKey().get(pos));
+            iu = icdg.mapNoUnits(pos);
             if (iu!=null) {
                 if(iu.getMethod().getSignature().equals(currentMethod)) {
                     chunk.put(iu.getUnitId(), iu);
@@ -172,11 +169,11 @@ public class Traversal {
 
     public int nextFlowEdge(int pos) {
         int newPos = pos;
-        List<Integer> successors = Graphs.successorListOf(icdg.getGraph(), pos);
+        List<Integer> successors = icdg.successorListOf(pos);
         Collections.sort(successors);
         for (Integer s: successors) {
-            DefaultWeightedEdge e = icdg.getGraph().getEdge(pos, s);
-            if (icdg.getGraph().getEdgeWeight(e) == Constants.FLOW_EDGE) {
+            Edge e = icdg.getEdge(pos, s);
+            if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
                 newPos = s;
             }
         }
@@ -185,15 +182,15 @@ public class Traversal {
 
     public int nextCallOrFlowEdge(int pos) {
         int newPos = pos;
-        List<Integer> successors = Graphs.successorListOf(icdg.getGraph(), pos);
+        List<Integer> successors = icdg.successorListOf(pos);
         Collections.sort(successors);
         for (Integer s: successors) {
-            DefaultWeightedEdge e = icdg.getGraph().getEdge(pos, s);
-            if (icdg.getGraph().getEdgeWeight(e) == Constants.CALL_EDGE) {
+            Edge e = icdg.getEdge(pos, s);
+            if (e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
                 newPos = s;
                 break;
             }
-            if (icdg.getGraph().getEdgeWeight(e) == Constants.FLOW_EDGE) {
+            if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
                 newPos = s;
             }
         }
@@ -201,7 +198,7 @@ public class Traversal {
     }
 
     public CalledChunk getCalledChunk(int pos) {
-        StatementInstance iu = icdg.getMapKeyUnits().get(icdg.getMapNoKey().get(pos));
+        StatementInstance iu = icdg.mapNoUnits(pos);
         CalledChunk cached = AnalysisCache.getFromCalledChunkCache(iu);
         if (cached != null) {
             return cached;
@@ -212,17 +209,17 @@ public class Traversal {
         Pair<Integer, Boolean> searchResult = searchForMethod(pos);
         pos = searchResult.getO1();
         foundBody = searchResult.getO2();
-        if (icdg.getMapNoKey().get(pos) == null || !foundBody) {
+        if (icdg.mapNoUnits(pos) == null || !foundBody) {
             calledChunk.setChunk(null);
             AnalysisCache.putInCalledChunkCache(iu, calledChunk);
             return calledChunk;
         }
-        iu = icdg.getMapKeyUnits().get(icdg.getMapNoKey().get(pos));
+        iu = icdg.mapNoUnits(pos);
         calledChunk.setRetLine(pos);
         calledChunk.setRetIu(iu);
         String currentMethod = iu.getMethod().getSignature();
         while(pos>=0) {
-            iu = icdg.getMapKeyUnits().get(icdg.getMapNoKey().get(pos));
+            iu = icdg.mapNoUnits(pos);
             if (iu!=null) {
                 if(iu.getMethod().getSignature().equals(currentMethod)) {
                     calledChunk.getChunk().put(iu.getUnitId(), iu);
@@ -253,12 +250,12 @@ public class Traversal {
 
     private Pair<Integer, Boolean> searchForMethod(int pos) {
         Pair<Integer, Boolean> searchResult = new Pair<>();
-        List<Integer> successors = Graphs.successorListOf(icdg.getGraph(), pos);
+        List<Integer> successors = icdg.successorListOf(pos);
         searchResult.setO1(pos);
         searchResult.setO2(false);
         for (Integer s: successors) {
-            DefaultWeightedEdge e = icdg.getGraph().getEdge(pos, s);
-            if (icdg.getGraph().getEdgeWeight(e) == Constants.CALL_EDGE) {
+            Edge e = icdg.getEdge(pos, s);
+            if (e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
                 searchResult.setO1(s);
                 searchResult.setO2(true);
                 break;
@@ -285,11 +282,11 @@ public class Traversal {
 
 
     private int checkForCaller(int pos) {
-        List<Integer> preds = Graphs.predecessorListOf(icdg.getGraph(), pos);
+        List<Integer> preds = icdg.predecessorListOf(pos);
         for (Integer pred: preds) {
-            DefaultWeightedEdge e = icdg.getGraph().getEdge(pred, pos);
+            Edge e = icdg.getEdge(pred, pos);
             try {
-                if (icdg.getGraph().getEdgeWeight(e) != Constants.FLOW_EDGE) {
+                if (e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
                     pos = pred;
                     break;
                 }
@@ -316,7 +313,7 @@ public class Traversal {
     }
 
     public int getLastStmt (int pos) {
-        int newPos = pos;
+        int newPos;
         while(pos < icdg.getLastLine()) {
             newPos = nextFlowEdge(pos);
             if (newPos != pos) {
@@ -340,7 +337,7 @@ public class Traversal {
         String currentMethod = iu.getMethod().getSignature();
         int newPos = pos;
         while(pos>=0) {
-            iu = icdg.getMapKeyUnits().get(icdg.getMapNoKey().get(pos));
+            iu = icdg.mapNoUnits(pos);
             if (iu!=null && !iu.getMethod().getSignature().equals(currentMethod)) {
                 break;
             }
@@ -459,7 +456,6 @@ public class Traversal {
 
 
     public AliasSet changeScope(AliasSet originalAliasSet, StatementInstance source, StatementInstance destination) {
-        // AnalysisLogger.log(true, "Changing scope: {}-{}", destination, originalAliasSet);
         AliasSet translatedSet = originalAliasSet;
         if (!source.methodEquals(destination)) {
             if (source.getLineNo() > destination.getLineNo()) {
@@ -468,7 +464,6 @@ public class Traversal {
                 translatedSet = changeScopeToCalled(source, originalAliasSet).getO1();
             }
         }
-        // AnalysisLogger.log(true, "Changed scope: {}-{}", translatedSet);
         return translatedSet;
     }
 
@@ -478,7 +473,6 @@ public class Traversal {
         Integer argIndex = 0;
         for (Unit uu: source.getMethod().getActiveBody().getUnits()) {
             if (uu instanceof IdentityStmt) {
-                // AnalysisLogger.log(true, "Inspecting: {}", uu);
                 if (uu.toString().contains("@this") || uu.toString().contains("@parameter")) {
                     addToParamMap(aliasSet, argParamMap, argIndex, uu);
                     argIndex++;
@@ -493,9 +487,7 @@ public class Traversal {
 
     private void addToParamMap(AliasSet aliasSet, Map<Integer, AccessPath> argParamMap, Integer argIndex, Unit uu) {
         String base = uu.getDefBoxes().get(0).getValue().toString();
-        // AnalysisLogger.log(true, "Type: {}", uu.getDefBoxes().get(0).getValue().getType());
         for (AccessPath ap: aliasSet) {
-            // AnalysisLogger.log(true, "Comparing {} to {}", ap, base);
             if (ap.startsWith(base)) {
                 argParamMap.put(argIndex, ap);
             }

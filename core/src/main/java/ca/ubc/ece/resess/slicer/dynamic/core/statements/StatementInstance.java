@@ -16,14 +16,10 @@ public class StatementInstance {
     private Unit u;
     private SootMethod sm;
     private int lineNo = -1;
-    private String stringRepresentation = null;
     private StatementMap returnChunk;
-    private Long threadID = -1L;
-    private SootMethod calledMethod = null;
-    private Long fieldId;
-    private Type classType = null;
-    private String unitString = null;
-    private Integer javaSourceLineNo = -1;
+    private long threadID = -1L;
+    private long fieldId = -1L;
+    private int javaSourceLineNo = -1;
     private String javaSourceFile = "UNKNOWN";
 
 
@@ -31,23 +27,18 @@ public class StatementInstance {
         this.sm = sm;
         this.u = u;
         this.lineNo = lineNo;
-        this.threadID = tid;
-        if(this.threadID == null){
-            this.threadID = -1L;
-        }
-        if (((Stmt) u).containsInvokeExpr()) {
-           this.calledMethod = ((Stmt) u).getInvokeExpr().getMethod();
-        }
+        if(tid != null){
+            this.threadID = tid;
+        } 
         if ((u instanceof AssignStmt) && ((AssignStmt) u).containsFieldRef()) {
             this.fieldId = fieldId;
         }
-        this.classType = this.sm.getDeclaringClass().getType();
         this.javaSourceLineNo = javaSourceLineNo;
         this.javaSourceFile = javaSourceFile;
     }
 
     public Type getClassType() {
-        return classType;
+        return this.sm.getDeclaringClass().getType();
     }
 
     public Unit getUnit() {
@@ -67,7 +58,10 @@ public class StatementInstance {
     }
 
     public SootMethod getCalledMethod() {
-        return calledMethod;
+        if (((Stmt) u).containsInvokeExpr()) {
+            return ((Stmt) u).getInvokeExpr().getMethod();
+        } 
+        return null;
     }
 
     public Integer getJavaSourceLineNo() {
@@ -79,21 +73,18 @@ public class StatementInstance {
     }
 
     public String getUnitId() {
-        if (stringRepresentation == null) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(lineNo);
-            sb.append(", ");
-            sb.append(sm.getSubSignature().replace(",", ";"));
-            sb.append(", ");
-            sb.append(sm.getDeclaringClass().getName());
-            sb.append(", ");
-            sb.append((u==null? "null":u.toString().replace(",", ";")));
-            sb.append((fieldId==null? "":":FIELD:"+fieldId.toString()));
-            sb.append((javaSourceLineNo==-1? "":":LINENO:"+javaSourceLineNo.toString()));
-            sb.append((javaSourceFile.equals("")? "":":FILE:"+javaSourceFile));
-            stringRepresentation = sb.toString();
-        }
-        return stringRepresentation;
+        StringBuilder sb = new StringBuilder();
+        sb.append(lineNo);
+        sb.append(", ");
+        sb.append(sm.getSubSignature().replace(",", ";"));
+        sb.append(", ");
+        sb.append(sm.getDeclaringClass().getName());
+        sb.append(", ");
+        sb.append((u==null? "null":u.toString().replace(",", ";")));
+        sb.append((fieldId!=-1L? "":":FIELD:"+fieldId));
+        sb.append((javaSourceLineNo==-1? "":":LINENO:"+javaSourceLineNo));
+        sb.append((javaSourceFile.equals("")? "":":FILE:"+javaSourceFile));
+        return sb.toString();
     }
 
     @Override
@@ -195,13 +186,6 @@ public class StatementInstance {
     }
 
     public String getUnitString() {
-        if (this.unitString == null) {
-            return this.u.toString();
-        }
-        return this.unitString;
-    }
-
-    public void setUnitString(String s) {
-        this.unitString = s;
+        return this.u.toString();
     }
 }
