@@ -34,14 +34,16 @@ public class SliceMethod {
     protected boolean frameworkModel = true;
     private boolean dataFlowsOnly = false;
     private boolean controlFlowOnly = false;
+    private boolean sliceOnce = false;
     private SlicingWorkingSet workingSet;
 
-    public SliceMethod(DynamicControlFlowGraph icdg, boolean frameworkModel, boolean dataFlowsOnly, boolean controlFlowOnly, SlicingWorkingSet workingSet) {
+    public SliceMethod(DynamicControlFlowGraph icdg, boolean frameworkModel, boolean dataFlowsOnly, boolean controlFlowOnly, boolean sliceOnce, SlicingWorkingSet workingSet) {
         this.icdg = icdg;
         this.traversal = new Traversal(icdg);
         this.frameworkModel = frameworkModel;
         this.dataFlowsOnly = dataFlowsOnly;
         this.controlFlowOnly = controlFlowOnly;
+        this.sliceOnce = sliceOnce;
         if (workingSet != null) {
             this.workingSet = workingSet;
         } else {
@@ -66,6 +68,12 @@ public class SliceMethod {
                     p = workingSet.pop();
                 } else {
                     break;
+                }
+            }
+
+            if (sliceOnce) {
+                if ( !(p.getO1().getJavaSourceLineNo().equals(start.getJavaSourceLineNo())) || !(p.getO1().getJavaSourceFile().equals(start.getJavaSourceFile()))) {
+                    continue;
                 }
             }
 
@@ -94,7 +102,10 @@ public class SliceMethod {
                 def = getDataDependence(workingSet, p, stmt, var, chunk, def, usedVars);
             }
 
-            if (def != null) {
+            if (def != null && !def.isEmpty()) {
+                if (sliceOnce) {
+                    def = new StatementSet(def.iterator().next());
+                }
                 addDataDependenceToWorkingSet(workingSet, p, var, def);
             }
         }
@@ -188,6 +199,7 @@ public class SliceMethod {
     public StatementSet localReachingDef(StatementInstance iu, AccessPath ap, StatementMap chunk, AliasSet usedVars, boolean frameworkModel){
         AnalysisLogger.log(Constants.DEBUG, "Getting local def for {} with chunk {}", ap, chunk);
         StatementSet defSet = new StatementSet();
+        StatementSet defsInCalled = null;
         if (ap.isEmpty() || chunk == null) {
             return defSet;
         }
@@ -243,11 +255,11 @@ public class SliceMethod {
                     }
                 }
             }
-            if (invokeExpr != null && !traversal.isFrameworkMethod(u)) {
+            if (invokeExpr != null && !traversal.isFrameworkMethod(u) && defsInCalled == null) {
                 AliasSet aliasesInCalled = traversal.changeScopeToCalled(u, new AliasSet(ap)).getO1();
                 for (AccessPath varInCalled: aliasesInCalled) {
                     StatementMap calledChunk = traversal.getCalledChunk(u.getLineNo()).getChunk();
-                    StatementSet defsInCalled = localReachingDef(iu, varInCalled, calledChunk, usedVars, frameworkModel);
+                    defsInCalled = localReachingDef(iu, varInCalled, calledChunk, usedVars, frameworkModel);
                     AnalysisLogger.log(Constants.DEBUG, "Added defs from called {}", defsInCalled);
                     defSet.addAll(defsInCalled);
                 }
