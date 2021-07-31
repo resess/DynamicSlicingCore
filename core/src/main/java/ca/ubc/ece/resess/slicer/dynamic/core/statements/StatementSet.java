@@ -1,6 +1,7 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.statements;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -14,6 +15,10 @@ public class StatementSet extends LinkedHashSet<StatementInstance> {
 
     public StatementSet(StatementSet other) {
         this.addAll(other);
+    }
+
+    public StatementSet(StatementInstance... statements) {
+        this.addAll(Arrays.asList(statements));
     }
 
     @Override
