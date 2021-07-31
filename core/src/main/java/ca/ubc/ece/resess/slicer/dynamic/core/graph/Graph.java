@@ -9,46 +9,49 @@ import java.util.Map;
 import java.util.Set;
 
 public class Graph {
-  private Map<EdgeBounds, Edge> edgeSet;
-  private Map<Integer, Set<Edge>> edgeMapFromSource;
-  private Map<Integer, Set<Edge>> edgeMapFromDestination;
+  private Map<Integer, List<Edge>> edgeMapFromSource;
+  private Map<Integer, List<Edge>> edgeMapFromDestination;
 
   public Graph() {
-    edgeSet = new HashMap<>();
     edgeMapFromSource = new HashMap<>();
     edgeMapFromDestination = new HashMap<>();
   }
 
   public void setEdgeType(int source, int destination, EdgeType edgeType) {
     Edge edge = new Edge(source, destination, edgeType);
-    EdgeBounds edgeVertices = new EdgeBounds(source, destination);
-    if (edgeSet.containsKey(edgeVertices)) {
-      edgeSet.get(edgeVertices).setEdgeType(edgeType);
-    } else {
-      edgeSet.put(edgeVertices, edge);
-      Set<Edge> mappedEdges = edgeMapFromSource.getOrDefault(source, new HashSet<>());
-      mappedEdges.add(edge);
-      edgeMapFromSource.put(source, mappedEdges);
+    List<Edge> mappedEdges = edgeMapFromSource.getOrDefault(source, new ArrayList<>());
+    updateOrAddEdge(destination, edgeType, edge, mappedEdges);
+    edgeMapFromSource.put(source, mappedEdges);
 
-      mappedEdges = edgeMapFromDestination.getOrDefault(destination, new HashSet<>());
+    mappedEdges = edgeMapFromDestination.getOrDefault(destination, new ArrayList<>());
+    updateOrAddEdge(destination, edgeType, edge, mappedEdges);
+    edgeMapFromDestination.put(destination, mappedEdges);
+  }
+
+  private void updateOrAddEdge(int destination, EdgeType edgeType, Edge edge, List<Edge> mappedEdges) {
+    boolean set = false;
+    for (Edge me: mappedEdges) {
+      if (me.getDestination() == destination) {
+        me.setEdgeType(edgeType);
+        set = true;
+      }
+    }
+    if (!set) {
       mappedEdges.add(edge);
-      edgeMapFromDestination.put(destination, mappedEdges);
     }
   }
 
-  public Set<Edge> getEdgeSet() {
-    return new HashSet<>(edgeSet.values());
+  public Set<Map.Entry<Integer, List<Edge>>> getEdgeSet() {
+    return edgeMapFromSource.entrySet();
   }
 
   public void removeAllEdges(Set<Edge> edges) {
     for (Edge edge: edges) {
-      edgeSet.remove(new EdgeBounds(edge.getSource(), edge.getDestination()));
-
-      Set<Edge> mappedEdges = edgeMapFromSource.getOrDefault(edge.getSource(), new HashSet<>());
+      List<Edge> mappedEdges = edgeMapFromSource.getOrDefault(edge.getSource(), new ArrayList<>());
       mappedEdges.remove(edge);
       edgeMapFromSource.put(edge.getSource(), mappedEdges);
 
-      mappedEdges = edgeMapFromDestination.getOrDefault(edge.getDestination(), new HashSet<>());
+      mappedEdges = edgeMapFromDestination.getOrDefault(edge.getDestination(), new ArrayList<>());
       mappedEdges.remove(edge);
       edgeMapFromDestination.put(edge.getDestination(), mappedEdges);
     }
@@ -72,22 +75,29 @@ public class Graph {
   }
 
   public Edge getEdge(int source, int destination) {
-    return edgeSet.get(new EdgeBounds(source, destination));
+    for (Edge edge : edgeMapFromSource.get(source)) {
+      if (edge.getDestination() == destination) {
+        return edge;
+      }
+    }
+    return null;
   }
 
   @Override
   public String toString() {
-    if (edgeSet.isEmpty()) {
+    if (edgeMapFromSource.isEmpty()) {
       return "Empty";
     }
     StringBuilder sb = new StringBuilder();
-    Iterator<Edge> it = edgeSet.values().iterator();
-    Edge e = it.next();
-    sb.append(e.toString());
-    while (it.hasNext()) {
-      e = it.next();
-      sb.append("\n");
+    for (List<Edge> edgeList: edgeMapFromSource.values()) {
+      Iterator<Edge> it = edgeList.iterator();
+      Edge e = it.next();
       sb.append(e.toString());
+      while (it.hasNext()) {
+        e = it.next();
+        sb.append("\n");
+        sb.append(e.toString());
+      }
     }
     return sb.toString();
   }
