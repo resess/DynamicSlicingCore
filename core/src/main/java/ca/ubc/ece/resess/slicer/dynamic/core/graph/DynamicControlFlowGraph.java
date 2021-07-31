@@ -80,15 +80,19 @@ public class DynamicControlFlowGraph extends Graph{
         Map<String, SootMethod> allMethods = createMethodsMap(chain);
         Map<SootMethod, Map <String, Unit>> unitStringsCache = new HashMap<>();
 
-        ListIterator<TraceStatement> traceIterator = tr.listIterator();
         AnalysisLogger.log(true, "Trace size: {}", tr.size());
         StatementInstance previousStatement = null;
         StatementInstance createdStatement = null;
         SootMethod oldMethod = null;
         long timeStamp = System.currentTimeMillis();
-        while (traceIterator.hasNext()) {
-            int lineNumber = traceIterator.nextIndex();
-            TraceStatement traceStatement = traceIterator.next();
+        int lineNumber = -1;
+        for (TraceStatement traceStatement : tr) {
+            lineNumber = lineNumber + 1;
+            if (lineNumber%100000==0) {
+                long newTimeStamp = System.currentTimeMillis();
+                AnalysisLogger.log(true, "Progress: {}/{} ({}), time: {}", lineNumber, tr.size(),  lineNumber*100/tr.size(),(newTimeStamp - timeStamp)/1e6);
+                timeStamp = newTimeStamp;
+            }
             String methodName = traceStatement.getMethod();
             SootMethod mt = allMethods.get(methodName);
             try {
@@ -332,16 +336,18 @@ public class DynamicControlFlowGraph extends Graph{
 
     private void cleanGraphFromFalseEdges(Set<Pair<Integer, Integer>> connectedThreads){
         Set<Edge> removed = new HashSet<>();
-        for (Edge e: getEdgeSet()){
-            int source = e.getSource();
-            int target = e.getDestination();
-            if (e.getEdgeType().equals(EdgeType.CALL_EDGE) || e.getEdgeType().equals(EdgeType.RETURN_EDGE)) {
-                if (connectedThreads.contains(new Pair<>(source, target)) || mapNoUnits(source) == null || mapNoUnits(target) == null){
-                    continue;
+        for (Map.Entry<Integer, List<Edge>> entry: getEdgeSet()) {
+            for (Edge e: entry.getValue()) {
+                int source = e.getSource();
+                int target = e.getDestination();
+                if (e.getEdgeType().equals(EdgeType.CALL_EDGE) || e.getEdgeType().equals(EdgeType.RETURN_EDGE)) {
+                    if (connectedThreads.contains(new Pair<>(source, target)) || mapNoUnits(source) == null || mapNoUnits(target) == null){
+                        continue;
+                    }
+                    removeFlowEdgesAccrossThreads(removed, e, source, target);
+                } else if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
+                    removeFlowEdgesAfterReturn(removed, e, source);
                 }
-                removeFlowEdgesAccrossThreads(removed, e, source, target);
-            } else if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
-                removeFlowEdgesAfterReturn(removed, e, source);
             }
         }
         removeAllEdges(removed);
@@ -363,12 +369,14 @@ public class DynamicControlFlowGraph extends Graph{
 
     private void removeReturnEdges(){
         Set<Edge> removed = new HashSet<>();
-        for (Edge e: getEdgeSet()){
-            int source = e.getSource();
-            if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
-                // Removing false flow edges after returns 
-                if (mapNoUnits(source) != null && mapNoUnits(source).getUnit() != null && mapNoUnits(source).isReturn()) {
-                    removed.add(e);
+        for (Map.Entry<Integer, List<Edge>> entry: getEdgeSet()){
+            for (Edge e: entry.getValue()) {
+                int source = e.getSource();
+                if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
+                    // Removing false flow edges after returns 
+                    if (mapNoUnits(source) != null && mapNoUnits(source).getUnit() != null && mapNoUnits(source).isReturn()) {
+                        removed.add(e);
+                    }
                 }
             }
         }
