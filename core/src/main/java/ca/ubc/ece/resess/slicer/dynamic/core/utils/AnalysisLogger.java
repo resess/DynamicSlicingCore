@@ -22,6 +22,8 @@ public class AnalysisLogger {
             StackTraceElement e = stacktrace[2];
             String methodName = e.getMethodName();
             String className = e.getClassName();
+            String [] classNameArr = className.split("\\.");
+            className = classNameArr[classNameArr.length-1];
             Logger logger = LoggerFactory.getLogger(className);
             logger.info(methodName + " (" + e.getLineNumber() + "): " +  msg, args);
         }
@@ -33,6 +35,8 @@ public class AnalysisLogger {
             StackTraceElement e = stacktrace[2];
             String methodName = e.getMethodName();
             String className = e.getClassName();
+            String [] classNameArr = className.split("\\.");
+            className = classNameArr[classNameArr.length-1];
             Logger logger = LoggerFactory.getLogger(className);
             logger.warn(methodName + " (" + String.valueOf(e.getLineNumber()) + "): " +  msg, args);
         }
@@ -43,6 +47,8 @@ public class AnalysisLogger {
         StackTraceElement e = stacktrace[2];
         String methodName = e.getMethodName();
         String className = e.getClassName();
+        String [] classNameArr = className.split("\\.");
+        className = classNameArr[classNameArr.length-1];
         Logger logger = LoggerFactory.getLogger(className);
         logger.error(methodName + " (" + e.getLineNumber() + "): " +  msg, args);
         throw new Error("Logger error called");

@@ -377,7 +377,7 @@ public class Traversal {
         }
 
         StatementInstance source = getCalledChunk(caller.getLineNo()).getRetIu();
-        Map<Integer, AccessPath> argParamMap = getArgParamMap(source, caller, aliasSet);
+        Map<Integer, AccessPath> argParamMap = getArgParamMapCalled(source, caller, aliasSet, args);
 
         // for(Value arg: args) {
         //     for (AccessPath ap: aliasSet) {
@@ -393,9 +393,7 @@ public class Traversal {
         for (argPos = 0; argPos < args.size(); argPos++) {
             AccessPath param = argParamMap.get(argPos);
             if (param != null) {
-                AccessPath p = new AccessPath(args.get(argPos).toString(), args.get(argPos).getType(), param.getUsedLine(), param.getDefinedLine(), caller);
-                p.add(param.getFields(), param.getFieldsTypes(), caller);
-                aliasedArgs.add(p);
+                aliasedArgs.add(param);
             }
         }
         
@@ -467,15 +465,32 @@ public class Traversal {
         return translatedSet;
     }
 
-
-    public Map<Integer, AccessPath> getArgParamMap(StatementInstance source, StatementInstance caller, AliasSet aliasSet) {
+    public Map<Integer, AccessPath> getArgParamMapCaller(StatementInstance source, StatementInstance caller, AliasSet aliasSet) {
         Map<Integer, AccessPath> argParamMap = new LinkedHashMap<>();
         Integer argIndex = 0;
         for (Unit uu: source.getMethod().getActiveBody().getUnits()) {
             if (uu instanceof IdentityStmt) {
                 if (uu.toString().contains("@this") || uu.toString().contains("@parameter")) {
-                    addToParamMap(aliasSet, argParamMap, argIndex, uu);
+                    addToParamMapCaller(aliasSet, argParamMap, argIndex, uu);
                     argIndex++;
+                }
+            } else {
+                break;
+            }
+        }
+        return argParamMap;
+    }
+
+    public Map<Integer, AccessPath> getArgParamMapCalled(StatementInstance source, StatementInstance caller, AliasSet aliasSet, List<Value> args) {
+        Map<Integer, AccessPath> argParamMap = new LinkedHashMap<>();
+        Integer argIndex = 0;
+        for (Unit uu: source.getMethod().getActiveBody().getUnits()) {
+            if (uu instanceof IdentityStmt) {
+                if (uu.toString().contains("@this") || uu.toString().contains("@parameter")) {
+                    if (argIndex < args.size()) {
+                        addToParamMapCalled(aliasSet, argParamMap, argIndex, uu, args.get(argIndex));
+                        argIndex++;
+                    }
                 }
             } else {
                 break;
@@ -485,7 +500,7 @@ public class Traversal {
         return argParamMap;
     }
 
-    private void addToParamMap(AliasSet aliasSet, Map<Integer, AccessPath> argParamMap, Integer argIndex, Unit uu) {
+    private void addToParamMapCaller(AliasSet aliasSet, Map<Integer, AccessPath> argParamMap, Integer argIndex, Unit uu) {
         String base = uu.getDefBoxes().get(0).getValue().toString();
         for (AccessPath ap: aliasSet) {
             if (ap.startsWith(base)) {
@@ -494,6 +509,16 @@ public class Traversal {
         }
     }
 
+    private void addToParamMapCalled(AliasSet aliasSet, Map<Integer, AccessPath> argParamMap, Integer argIndex, Unit uu, Value arg) {
+        for (AccessPath ap: aliasSet) {
+            if (ap.startsWith(arg.toString())) {
+                Value argVal = uu.getDefBoxes().get(0).getValue();
+                AccessPath argAp = new AccessPath(argVal.toString(), argVal.getType(), ap.getUsedLine(), ap.getDefinedLine(), ap.getStatementInstance());
+                AccessPath newAp = new AccessPath(argAp, ap.getStatementInstance()).add(ap.getAfter(argAp).getO1(), ap.getAfter(argAp).getO2(), ap.getStatementInstance()); 
+                argParamMap.put(argIndex, newAp);
+            }
+        }
+    }
 
     public synchronized AliasSet changeScopeToCaller(StatementInstance source, StatementInstance caller, AliasSet aliasSet) {
         AliasSet aliasedArgs = new AliasSet();
@@ -511,7 +536,7 @@ public class Traversal {
         // if (icdg.getSetterCallbackMap().containsKey(new Pair<>(caller.getMethod(), caller.getUnit()))) {
         //     inc = 1;
         // }
-        Map<Integer, AccessPath> argParamMap = getArgParamMap(source, caller, aliasSet);
+        Map<Integer, AccessPath> argParamMap = getArgParamMapCaller(source, caller, aliasSet);
         int argPos = 0;
         // for(Value arg: args) {
         //     for (AccessPath ap: aliasSet) {
