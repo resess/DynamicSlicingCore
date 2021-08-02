@@ -119,6 +119,9 @@ public class Traversal {
     }
 
     public Pair<CalledChunk, AccessPath> getReturnIfStmtIsCall(int pos) {
+        if (!icdg.mapNoUnits(pos).containsInvokeExpr()) {
+            return null;
+        }
         CalledChunk calledChunk = getCalledChunk(pos);
         if (calledChunk.getRetIu() != null){
             if (((Stmt) icdg.mapNoUnits(pos).getUnit()).getInvokeExpr().getMethod().getName().equals(calledChunk.getRetIu().getMethod().getName())) {

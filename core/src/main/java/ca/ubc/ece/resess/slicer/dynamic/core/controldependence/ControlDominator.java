@@ -13,10 +13,13 @@ import soot.toolkits.graph.pdg.HashMutablePDG;
 import soot.toolkits.graph.pdg.PDGNode;
 import soot.toolkits.graph.pdg.PDGRegion;
 import soot.SootMethod;
+import soot.Unit;
 import soot.jimple.GotoStmt;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -80,7 +83,6 @@ public class ControlDominator{
             if (computedGraphs.containsKey(stmt.getMethod())) {
                 cug = computedGraphs.get(stmt.getMethod());
             } else {
-                // AnalysisLogger.log(true, "New method: {}", stmt.getMethod());
                 cug = new EnhancedUnitGraph(stmt.getMethod().getActiveBody());
                 computedGraphs.put(stmt.getMethod(), cug);
             }
@@ -88,9 +90,10 @@ public class ControlDominator{
             HashMutablePDG pdg = new HashMutablePDG(cug);
             for(PDGRegion r: pdg.getPDGRegions()) {
                 PDGNode p = r.getCorrespondingPDGNode();
-                if (r.getUnits().contains(stmt.getUnit())) {
-                    if (r.getUnits().toString().contains(":= @caughtexception") || r.getUnits().toString().contains("goto [?= throw")) {
-                        candidateIu = previousTraceLine(icdg, stmt.getLineNo());
+                List<Unit> regionUnits = r.getUnits();
+                if (regionUnits.contains(stmt.getUnit())) {
+                    if (regionUnits.toString().contains(":= @caughtexception") || regionUnits.toString().contains("goto [?= throw")) {
+                        candidateIu = lineBeforeException(icdg, regionUnits, stmt);
                     } else {
                         candidateIu = matchControlDom(stmt, chunk, pdg, candidateIu, p);
                     }
@@ -134,15 +137,29 @@ public class ControlDominator{
     }
 
 
-    private static StatementInstance previousTraceLine(DynamicControlFlowGraph icdg, int pos) {
+    private static StatementInstance lineBeforeException(DynamicControlFlowGraph icdg, List<Unit> regionUnits, StatementInstance statementInstance) {
         StatementInstance prev = null;
-        int newPos = pos;
+        Set<Unit> mustFind = new HashSet<>();
+        for (Unit u: regionUnits) {
+            if (u.equals(statementInstance.getUnit())) {
+                break;
+            }
+            if (!u.toString().contains(":= @caughtexception")) {
+                mustFind.add(u);
+            }
+        }
+        int newPos = statementInstance.getLineNo();
         while (newPos > 0) {
             newPos--;
             prev = icdg.mapNoUnits(newPos);
             if ((prev!=null) && !((prev.getUnit()) instanceof GotoStmt)) {
-                return prev;
+                if (mustFind.isEmpty()) {
+                    return prev;
+                } else if (mustFind.contains(prev.getUnit())) {
+                    mustFind.remove(prev.getUnit());
+                }
             }
+            
         }
         return prev;
     }
