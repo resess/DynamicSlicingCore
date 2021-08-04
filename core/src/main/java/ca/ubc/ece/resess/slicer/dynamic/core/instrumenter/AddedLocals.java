@@ -4,7 +4,6 @@ import soot.Local;
 
 public class AddedLocals {
     Local startTimer;
-    Local threadId;
     Local tmpString;
     Local sb;
     Local tagString;

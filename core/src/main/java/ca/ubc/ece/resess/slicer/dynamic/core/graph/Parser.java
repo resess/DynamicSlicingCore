@@ -77,24 +77,22 @@ public class Parser {
                 // AnalysisLogger.log(true, "Chunk after {}", chunk);
                 // AnalysisLogger.log(true, "Len after {}", chunk.size());
                 for (String s: chunk) {
-                    Long fieldId = null;
-                    Long lineNum = null;
-                    Long threadNum = -1L;
+                    int fieldId = -1;
+                    long lineNum = -1L;
+                    long threadNum = -1L;
                     String [] sSplit = s.split(":");
                     try {
                         lineNum = Long.valueOf(sSplit[0]);
                     } catch (java.lang.NumberFormatException e) {
                         continue;
                     }
-                    boolean isField = checkIsField(sSplit);
-                    String fieldLine = "";
-                    if (isField) {
-                        fieldId = Long.valueOf(sSplit[2]);
-                        fieldLine = DELEMITER + fieldId;
-                    } else {
-                        threadNum = getThreadNum(threadNum, sSplit);
+                    threadNum = Long.valueOf(sSplit[1]);
+                    try {
+                        fieldId = Integer.valueOf(sSplit[2]);
+                    } catch (ArrayIndexOutOfBoundsException e) {
+                        // Ignored
                     }
-                    addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldLine);
+                    addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldId);
                 }
                 AnalysisLogger.log(true, "Expanded trace size: {}", listTraces.size());
             }
@@ -132,24 +130,15 @@ public class Parser {
         }
     }
 
-    private static Long getThreadNum(Long threadNum, String[] sSplit) {
-        try {
-            threadNum = Long.valueOf(sSplit[1]);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            // Ignored
-        }
-        return threadNum;
-    }
-
-    private static void addToExpandedTrace(List<TraceStatement> listTraces, Map<Long, List<String>> logMap, Long lineNum,
-            Long threadNum, String fieldLine) {
+    private static void addToExpandedTrace(List<TraceStatement> listTraces, Map<Long, List<String>> logMap, long lineNum,
+            long threadNum, int fieldId) {
         try {
             for (String line : logMap.get(lineNum)) {
-                line = line + DELEMITER + threadNum.toString() + fieldLine;
+                line = line + DELEMITER + threadNum + DELEMITER + fieldId;
                 String [] tokens = line.split(DELEMITER);
                 TraceStatement tr = new TraceStatement();
                 if(tokens.length < 4) continue;
-                Long lineNumber = Long.valueOf(tokens[0]);
+                long lineNumber = Long.valueOf(tokens[0]);
                 String method = tokens[1];
                 String instruction = tokens[2];
                 Statement statement = Statement.getStatement(lineNumber, method, instruction);

@@ -8,7 +8,10 @@ import java.util.Base64;
 
 public class DynamicSlicingLogger{
     static final int SIZE = 1024;
-    static final ArrayList<String> queue = new ArrayList<>(SIZE);
+    static final String [] queue = new String[SIZE];
+    static final long [] threadIds = new long[SIZE];
+    static final int [] hashCodes = new int[SIZE];
+    static int queueIndex = 0;
     static final PrintStream outStream = System.out;
     static {
         Runtime.getRuntime().addShutdownHook(new DynamicSlicingLoggerShutdown());
@@ -23,26 +26,51 @@ public class DynamicSlicingLogger{
 
     public static void println(String e) {
         synchronized (queue) {
-            queue.add(e);
-            if (queue.size() > SIZE-1) {
+            queue[queueIndex] = e;
+            threadIds[queueIndex] = Thread.currentThread().getId();
+            hashCodes[queueIndex] = 0;
+            queueIndex++;
+            if (queueIndex > SIZE-1) {
                 flush();
             }
         }
     }
-    
+
+    public static void println(String e, int code) {
+        synchronized (queue) {
+            queue[queueIndex] = e;
+            threadIds[queueIndex] = Thread.currentThread().getId();
+            hashCodes[queueIndex] = code;
+            queueIndex++;
+            if (queueIndex > SIZE-1) {
+                flush();
+            }
+        }
+    }
+
     public static void flush(String e) {
         synchronized (queue) {
-            queue.add(e);
+            queue[queueIndex] = e;
+            threadIds[queueIndex] = Thread.currentThread().getId();
+            hashCodes[queueIndex] = 0;
+            queueIndex++;
             flush();
         }
     }
 
     public static void flush() {
         synchronized (queue) {
-            outStream.println("Flushing queue: size is " + queue.size());
+            outStream.println("Flushing queue: size is " + queueIndex);
             StringBuilder sb = new StringBuilder();
-            for (String s: queue) {
-                sb.append(s);
+            for (int i = 0; i < queueIndex; i++) {
+                sb.append(queue[i]);
+                sb.append(":");
+                sb.append(threadIds[i]);
+                int code = hashCodes[i];
+                if (code != 0) {
+                    sb.append(":");
+                    sb.append(hashCodes[i]);
+                }
                 sb.append("-");
             }
             byte[] bArray = sb.toString().getBytes();
@@ -55,7 +83,7 @@ public class DynamicSlicingLogger{
                 os.close();
                 outStream.println("SLICING: ZLIB: " + compressed);
             } catch (Exception e){}
-            queue.clear();
+            queueIndex = 0;
         }
     }
 }

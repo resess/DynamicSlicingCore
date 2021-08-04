@@ -81,7 +81,7 @@ public class StatementInstance {
         sb.append(sm.getDeclaringClass().getName());
         sb.append(", ");
         sb.append((u==null? "null":u.toString().replace(",", ";")));
-        sb.append((fieldId!=-1L? "":":FIELD:"+fieldId));
+        sb.append((fieldId==-1L? "":":FIELD:"+fieldId));
         sb.append((javaSourceLineNo==-1? "":":LINENO:"+javaSourceLineNo));
         sb.append((javaSourceFile.equals("")? "":":FILE:"+javaSourceFile));
         return sb.toString();

@@ -161,6 +161,9 @@ public class FrameworkModel {
 
     public static void setStubDroidPath(String stubDroidPath) {
         FrameworkModel.stubDroidPath = stubDroidPath;
+        if (!new File(FrameworkModel.stubDroidPath).isDirectory()) {
+            throw new Error(String.format("Stubdroid path (%s) does not exist", FrameworkModel.stubDroidPath), new Throwable());
+        }
     }
 
     public static void setExtraPath(String extraPath) {
@@ -169,6 +172,9 @@ public class FrameworkModel {
 
     public static void setTaintWrapperFile(String taintWrapperPath) {
         FrameworkModel.taintWrapperPath = taintWrapperPath;
+        if (!new File(FrameworkModel.taintWrapperPath).isFile()) {
+            throw new Error(String.format("Taint wrapper path (%s) does not exist", FrameworkModel.taintWrapperPath), new Throwable());
+        }
         readTaintWrapperFile();
     }
 
