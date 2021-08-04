@@ -36,12 +36,12 @@ public class Parser {
         throw new IllegalStateException("Utility class");
       }
 
-    public static List <TraceStatement> readFile(String fileName, String staticLogFile) {
+    public static Trace readFile(String fileName, String staticLogFile) {
         return expandTrace(staticLogFile, fileName);
     }
 
-    public static List <TraceStatement> expandTrace(String staticLogFile, String traceName) {
-        List <TraceStatement> listTraces = new ArrayList<>();
+    public static Trace expandTrace(String staticLogFile, String traceName) {
+        Trace listTraces = new Trace();
         Map<Long, List<String>> logMap = new HashMap<>();
         JSONParser parser = new JSONParser();
         try {
@@ -130,7 +130,7 @@ public class Parser {
         }
     }
 
-    private static void addToExpandedTrace(List<TraceStatement> listTraces, Map<Long, List<String>> logMap, long lineNum,
+    private static void addToExpandedTrace(Trace listTraces, Map<Long, List<String>> logMap, long lineNum,
             long threadNum, int fieldId) {
         try {
             for (String line : logMap.get(lineNum)) {

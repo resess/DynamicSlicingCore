@@ -3,6 +3,7 @@ package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -250,6 +251,29 @@ public class DynamicSlice
         } catch (NullPointerException e) {
             // pass
         }
+    }
+
+
+    public Map<StatementInstance, String> getSliceDependenciesAsMap() {
+
+        Map<StatementInstance, String> sliceDeps = new HashMap<>();
+        for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: this) {
+            String edge = getEdges(entry.getO1().getO1().getLineNo(), entry.getO2().getO1().getLineNo());
+            StatementInstance sourceNode = entry.getO2().getO1();
+            StatementInstance destinationNode = entry.getO1().getO1();
+            String sourceString = ", source:" + + sourceNode.getLineNo();
+            String edgeStr = ", no variable";
+            AccessPath sliceEdge = entry.getO2().getO2();
+            if (edge.equals("data")) {
+                edgeStr = ", varaible:" + sliceEdge.getPathString();
+            }
+            if (sliceEdge.getPathString().isEmpty()) {
+                edgeStr = ", start";
+                sourceString = "";
+            }
+            sliceDeps.put(destinationNode, "data" + edgeStr + sourceString);
+        }
+        return sliceDeps;
     }
 }
 
