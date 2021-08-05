@@ -268,7 +268,7 @@ public class DynamicSlice
                 edgeStr = "data, varaible:" + sliceEdge.getPathString();
             }
             if (sliceEdge.getPathString().isEmpty()) {
-                edgeStr = ", start";
+                edgeStr = "start";
                 sourceString = "";
             }
             sliceDeps.put(destinationNode, edgeStr + sourceString);
