@@ -262,16 +262,16 @@ public class DynamicSlice
             StatementInstance sourceNode = entry.getO2().getO1();
             StatementInstance destinationNode = entry.getO1().getO1();
             String sourceString = ", source:" + + sourceNode.getLineNo();
-            String edgeStr = ", no variable";
+            String edgeStr = "control, no variable";
             AccessPath sliceEdge = entry.getO2().getO2();
             if (edge.equals("data")) {
-                edgeStr = ", varaible:" + sliceEdge.getPathString();
+                edgeStr = "data, varaible:" + sliceEdge.getPathString();
             }
             if (sliceEdge.getPathString().isEmpty()) {
                 edgeStr = ", start";
                 sourceString = "";
             }
-            sliceDeps.put(destinationNode, "data" + edgeStr + sourceString);
+            sliceDeps.put(destinationNode, edgeStr + sourceString);
         }
         return sliceDeps;
     }
