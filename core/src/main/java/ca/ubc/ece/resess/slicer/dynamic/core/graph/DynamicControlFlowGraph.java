@@ -297,7 +297,9 @@ public class DynamicControlFlowGraph extends Graph{
 
     private void addControlFlows(StatementInstance previous, StatementInstance current) {
         if (previous != null && current != null) {
-            setEdgeType(previous.getLineNo(), current.getLineNo(), EdgeType.FLOW_EDGE);
+            if (previous.getMethod().equals(current.getMethod())) {
+                setEdgeType(previous.getLineNo(), current.getLineNo(), EdgeType.FLOW_EDGE);
+            }
         }
     }
 
@@ -392,9 +394,7 @@ public class DynamicControlFlowGraph extends Graph{
                 if (iu == null) {
                     continue;
                 }
-                fixAccrossThreads(unitsInThread, i);
                 fixConnectToCallers(unitsInThread, i);
-                fixFlowEdges(unitsInThread, i);
             }
         }
     }
@@ -424,6 +424,9 @@ public class DynamicControlFlowGraph extends Graph{
             fixed = true;
         }
         if (unitsInThread.get(j).getMethod().equals(unitsInThread.get(i).getMethod()) && !isReturn(possibleCaller)){
+            Set<Edge> removed = new HashSet<>();
+            removeNonCallerEdge(unitsInThread.get(i).getLineNo(), removed);
+            removeAllEdges(removed);
             setEdgeType(unitsInThread.get(j).getLineNo(), unitsInThread.get(i).getLineNo(), EdgeType.FLOW_EDGE);
             fixed = true;
         }
@@ -437,18 +440,6 @@ public class DynamicControlFlowGraph extends Graph{
             int posCaller = predecessorListOf(unitsInThread.get(i).getLineNo()).get(0);
             if (!unitsInThread.get(i).getMethod().equals(mapNoUnits(posCaller).getMethod()) ) {
                 connectToCaller(unitsInThread, i);
-            }
-        }
-    }
-
-    private void fixAccrossThreads(ArrayList<StatementInstance> unitsInThread, int i) {
-        if (predecessorListOf(unitsInThread.get(i).getLineNo()).isEmpty()) {
-            conntectToPrevAcrossThread(unitsInThread.get(i).getLineNo());
-        } else if (predecessorListOf(unitsInThread.get(i).getLineNo()).size() == 1) {
-            int posCaller = predecessorListOf(unitsInThread.get(i).getLineNo()).iterator().next();
-            Edge e = getEdge(posCaller, unitsInThread.get(i).getLineNo());
-            if (e != null && !e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
-                conntectToPrevAcrossThread(unitsInThread.get(i).getLineNo());
             }
         }
     }
@@ -473,62 +464,8 @@ public class DynamicControlFlowGraph extends Graph{
         return threadTraces;
     }
 
-    private boolean conntectToPrevAcrossThread (int lineNo) {
-        Set<Edge> removed = new HashSet<>();
-        StatementInstance iu = mapNoUnits(lineNo);
-        if (iu == null) {
-            return false;
-        }
-        int firstIu = getFirstUnit(lineNo);
-        StatementInstance prev = null;
-        int j = lineNo-1;
-        prev = mapNoUnits(j);
-        if (prev != null) {
-            if (!prev.getMethod().equals(mapNoUnits(firstIu).getMethod())) {
-                return false;
-            }
-            if (prev.containsInvokeExpr() && calledMethodInAppClasses(prev.getUnit())) {
-                if (((Stmt) prev.getUnit()).getInvokeExpr().getMethod().getSubSignature().equals(iu.getMethod().getSubSignature())) {
-                    if (!prev.getMethod().getDeclaringClass().getName().startsWith(Constants.ANDROID_LIBS)) {
-                        removeExistingEdges(lineNo, removed);
-                        addCallEdge(lineNo, prev);
-                        return true;
-                    }
-                } else {
-                    return false;
-                }
-            }
-        }
-        return false;
-    }
-
     private boolean calledMethodInAppClasses(Unit uu) {
         return Scene.v().getApplicationClasses().contains(((Stmt) uu).getInvokeExpr().getMethod().getDeclaringClass());
-    }
-
-    private void addCallEdge(int lineNo, StatementInstance prev) {
-        setEdgeType(prev.getLineNo(), lineNo, EdgeType.CALL_EDGE);
-    }
-
-    private void removeExistingEdges(int lineNo, Set<Edge> removed) {
-        for (int pred: predecessorListOf(lineNo)){
-            Edge p = getEdge(pred, lineNo);
-            if (p != null){
-                removed.add(p);
-            }
-        }
-    }
-
-    private int getFirstUnit(int lineNo) {
-        int firstIu = lineNo-1;
-        for (int j = lineNo-1; j >= 0; j--) {
-            StatementInstance first = mapNoUnits(j);
-            if (first != null) {
-                firstIu = j;
-                break;
-            }
-        }
-        return firstIu;
     }
 
     private boolean methodIsInAndroidLibs(ArrayList<StatementInstance> unitsInThread, int i) {

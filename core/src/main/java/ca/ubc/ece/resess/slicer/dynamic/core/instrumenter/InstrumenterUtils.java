@@ -208,13 +208,6 @@ public class InstrumenterUtils {
                 instrumentedFirst = true;
             }
         }
-        if (traps.contains(u.toString())) {
-            if (!instrumentedUnits.contains(u)) {
-                InstrumenterUtils.addPrint(u, units, b, addedLocals, cls, mtd, flags, instrumentedUnits, taggedUnits, globalLineCounter);
-                instrumentedUnits.add(u);
-            }
-            instrumentedFirst = true;
-        }
         return instrumentedFirst;
     }
     

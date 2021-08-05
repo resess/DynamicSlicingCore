@@ -75,6 +75,9 @@ public class Graph {
   }
 
   public Edge getEdge(int source, int destination) {
+    if (!edgeMapFromSource.containsKey(source)) {
+      return null;
+    }
     for (Edge edge : edgeMapFromSource.get(source)) {
       if (edge.getDestination() == destination) {
         return edge;
@@ -91,10 +94,8 @@ public class Graph {
     StringBuilder sb = new StringBuilder();
     for (List<Edge> edgeList: edgeMapFromSource.values()) {
       Iterator<Edge> it = edgeList.iterator();
-      Edge e = it.next();
-      sb.append(e.toString());
       while (it.hasNext()) {
-        e = it.next();
+        Edge e = it.next();
         sb.append("\n");
         sb.append(e.toString());
       }

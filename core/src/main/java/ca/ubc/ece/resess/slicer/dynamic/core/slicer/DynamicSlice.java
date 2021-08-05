@@ -4,6 +4,7 @@ package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -274,6 +275,15 @@ public class DynamicSlice
             sliceDeps.put(destinationNode, edgeStr + sourceString);
         }
         return sliceDeps;
+    }
+
+    public Set<String> getSliceAsSourceLineNumbers() {
+        Set<String> sliceLines = new HashSet<>();
+        for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: this) {
+            StatementInstance destinationNode = entry.getO1().getO1();
+            sliceLines.add(destinationNode.getJavaSourceFile() + ":" + destinationNode.getJavaSourceLineNo());
+        }
+        return sliceLines;
     }
 }
 
