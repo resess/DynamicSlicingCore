@@ -297,7 +297,7 @@ public class DynamicControlFlowGraph extends Graph{
 
     private void addControlFlows(StatementInstance previous, StatementInstance current) {
         if (previous != null && current != null) {
-            if (previous.getMethod().equals(current.getMethod())) {
+            if (previous.getMethod().equals(current.getMethod()) && !current.getMethod().equals(previous.getCalledMethod())) {
                 setEdgeType(previous.getLineNo(), current.getLineNo(), EdgeType.FLOW_EDGE);
             }
         }
@@ -597,9 +597,13 @@ public class DynamicControlFlowGraph extends Graph{
         if (jIuMethod.equals(iIuMethod)) {
             Edge e = getEdge(jIuLineNo, iIuLineNo);
             if (e == null){
-                removeNonCallerEdge(iIuLineNo, removed);
-                setEdgeType(jIuLineNo, iIuLineNo, EdgeType.FLOW_EDGE);
-                flowEdgeAdded = true;
+                boolean isReturn = isReturn(mapNoUnits(jIuLineNo).getUnit());
+                boolean alreadyHasFlowEdge = successorListOf(jIuLineNo).stream().anyMatch(s -> getEdge(jIuLineNo, s).getEdgeType().equals(EdgeType.FLOW_EDGE));
+                if (!isReturn && !alreadyHasFlowEdge) {
+                    removeNonCallerEdge(iIuLineNo, removed);
+                    setEdgeType(jIuLineNo, iIuLineNo, EdgeType.FLOW_EDGE);
+                    flowEdgeAdded = true;
+                }
             } else {
                 flowEdgeAdded = true;
             }
