@@ -254,7 +254,7 @@ public class DynamicControlFlowGraph extends Graph{
     }
 
 
-    private Map<String, Unit> createUnitStrings(PatchingChain<Unit> units) {
+    protected static Map<String, Unit> createUnitStrings(PatchingChain<Unit> units) {
         Map<String, Unit> unitString = new LinkedHashMap<>();
         for(Unit u: units) {
             if (u instanceof IdentityStmt) {
@@ -282,7 +282,7 @@ public class DynamicControlFlowGraph extends Graph{
         }
     }
 
-    private Map<String, SootMethod> createMethodsMap(Chain<SootClass> chain) {
+    protected static Map<String, SootMethod> createMethodsMap(Chain<SootClass> chain) {
         Map<String, SootMethod> allMethods = new HashMap<>();
         Iterator<SootClass> iterator = chain.snapshotIterator();
         while(iterator.hasNext()) {

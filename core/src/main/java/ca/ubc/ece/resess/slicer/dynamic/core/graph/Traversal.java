@@ -30,8 +30,10 @@ import soot.toolkits.scalar.Pair;
 public class Traversal {
 
     private DynamicControlFlowGraph icdg;
-    public Traversal(DynamicControlFlowGraph icdg) {
+    private AnalysisCache analysisCache;
+    public Traversal(DynamicControlFlowGraph icdg, AnalysisCache analysisCache) {
         this.icdg = icdg;
+        this.analysisCache = analysisCache;
     }
 
     public Set<StatementInstance> previousNodes(StatementInstance iu) {
@@ -75,7 +77,7 @@ public class Traversal {
 
     public StatementMap getChunk(int pos) {
         int startPos = pos;
-        StatementMap cachedChunk = AnalysisCache.getFromBwChunkCache(pos);
+        StatementMap cachedChunk = analysisCache.getFromBwChunkCache(pos);
         if (cachedChunk != null) {
             return cachedChunk;
         }
@@ -103,7 +105,7 @@ public class Traversal {
                 done = true;
             }
         }
-        AnalysisCache.putInBwChunkCache(startPos, chunk);
+        analysisCache.putInBwChunkCache(startPos, chunk);
         return chunk;
     }
 
@@ -142,7 +144,7 @@ public class Traversal {
 
     public StatementMap getForwardChunk(int pos) {
         int startPos = pos;
-        StatementMap cachedChunk = AnalysisCache.getFromFwChunkCache(pos);
+        StatementMap cachedChunk = analysisCache.getFromFwChunkCache(pos);
         if (cachedChunk != null) {
             return cachedChunk;
         }
@@ -166,7 +168,7 @@ public class Traversal {
                 break;
             }
         }
-        AnalysisCache.putInFwChunkCache(startPos, chunk);
+        analysisCache.putInFwChunkCache(startPos, chunk);
         return chunk;
     }
 
@@ -202,7 +204,7 @@ public class Traversal {
 
     public CalledChunk getCalledChunk(int pos) {
         StatementInstance iu = icdg.mapNoUnits(pos);
-        CalledChunk cached = AnalysisCache.getFromCalledChunkCache(iu);
+        CalledChunk cached = analysisCache.getFromCalledChunkCache(iu);
         if (cached != null) {
             return cached;
         }
@@ -214,7 +216,7 @@ public class Traversal {
         foundBody = searchResult.getO2();
         if (icdg.mapNoUnits(pos) == null || !foundBody) {
             calledChunk.setChunk(null);
-            AnalysisCache.putInCalledChunkCache(iu, calledChunk);
+            analysisCache.putInCalledChunkCache(iu, calledChunk);
             return calledChunk;
         }
         iu = icdg.mapNoUnits(pos);
@@ -240,13 +242,13 @@ public class Traversal {
 
         if (iu == null) {
             calledChunk.setChunk(null);
-            AnalysisCache.putInCalledChunkCache(iu, calledChunk);
+            analysisCache.putInCalledChunkCache(iu, calledChunk);
             return calledChunk;
         }
 
         addReturnVariable(iu, calledChunk);
 
-        AnalysisCache.putInCalledChunkCache(iu, calledChunk);
+        analysisCache.putInCalledChunkCache(iu, calledChunk);
         return calledChunk;
     }
 
@@ -332,7 +334,7 @@ public class Traversal {
 
     public int getCaller (int pos) {
         int startPos = pos;
-        Integer cachedPos = AnalysisCache.getFromCallerCache(startPos);
+        Integer cachedPos = analysisCache.getFromCallerCache(startPos);
         if (cachedPos != null) {
             return cachedPos;
         }
@@ -352,7 +354,7 @@ public class Traversal {
                 break;
             }
         }
-        AnalysisCache.putInCallerCache(startPos, pos);
+        analysisCache.putInCallerCache(startPos, pos);
         return pos;
     }
 
@@ -413,7 +415,7 @@ public class Traversal {
 
     public CallerContext getCallerForwardChunk(StatementInstance iu, Set<AccessPath> aliasSet) {
         AliasSet newAliasSet = new AliasSet();
-        CallerContext callerContext = AnalysisCache.getFromCallerForwardChunk(iu);
+        CallerContext callerContext = analysisCache.getFromCallerForwardChunk(iu);
         if (callerContext == null) {
             callerContext = new CallerContext();
             int firstStmt = getFirstStmt(iu.getLineNo());
@@ -421,7 +423,7 @@ public class Traversal {
             callerContext.setForwardChunk(true);
             callerContext.setCallerChunk(firstStmtChunk);
             callerContext.setCaller(callerContext.getCallerChunk().values().iterator().next());
-            AnalysisCache.putInCallerForwardChunk(iu, callerContext);
+            analysisCache.putInCallerForwardChunk(iu, callerContext);
         }
         for (Unit uu: callerContext.getCaller().getMethod().getActiveBody().getUnits()) {
             if (uu instanceof IdentityStmt) {

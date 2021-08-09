@@ -113,7 +113,7 @@ public class Parser {
         return isField;
     }
 
-    private static void buildLogMap(JSONObject jObj, Map<Long, List<String>> logMap) {
+    protected static void buildLogMap(JSONObject jObj, Map<Long, List<String>> logMap) {
         for (Object o :jObj.keySet()) {
             String methodName = (String) o;
             JSONObject methodBody = (JSONObject) jObj.get(o);
@@ -130,7 +130,7 @@ public class Parser {
         }
     }
 
-    private static void addToExpandedTrace(Trace listTraces, Map<Long, List<String>> logMap, long lineNum,
+    protected static void addToExpandedTrace(Trace listTraces, Map<Long, List<String>> logMap, long lineNum,
             long threadNum, int fieldId) {
         try {
             for (String line : logMap.get(lineNum)) {
@@ -154,7 +154,7 @@ public class Parser {
         }
     }
 
-    private static String decompress(String compressed64) {
+    protected static String decompress(String compressed64) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         try {
             byte[] compressed = Base64.getDecoder().decode(compressed64);

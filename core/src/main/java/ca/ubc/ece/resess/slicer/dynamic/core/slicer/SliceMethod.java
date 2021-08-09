@@ -13,6 +13,7 @@ import ca.ubc.ece.resess.slicer.dynamic.core.graph.Traversal;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementSet;
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
@@ -31,15 +32,17 @@ import soot.toolkits.scalar.Pair;
 public class SliceMethod {
     protected DynamicControlFlowGraph icdg;
     protected Traversal traversal;
+    protected AnalysisCache analysisCache;
     protected boolean frameworkModel = true;
     private boolean dataFlowsOnly = false;
     private boolean controlFlowOnly = false;
     private boolean sliceOnce = false;
     private SlicingWorkingSet workingSet;
 
-    public SliceMethod(DynamicControlFlowGraph icdg, boolean frameworkModel, boolean dataFlowsOnly, boolean controlFlowOnly, boolean sliceOnce, SlicingWorkingSet workingSet) {
+    public SliceMethod(DynamicControlFlowGraph icdg, boolean frameworkModel, boolean dataFlowsOnly, boolean controlFlowOnly, boolean sliceOnce, SlicingWorkingSet workingSet, AnalysisCache analysisCache) {
         this.icdg = icdg;
-        this.traversal = new Traversal(icdg);
+        this.analysisCache = analysisCache;
+        this.traversal = new Traversal(icdg, this.analysisCache);
         this.frameworkModel = frameworkModel;
         this.dataFlowsOnly = dataFlowsOnly;
         this.controlFlowOnly = controlFlowOnly;

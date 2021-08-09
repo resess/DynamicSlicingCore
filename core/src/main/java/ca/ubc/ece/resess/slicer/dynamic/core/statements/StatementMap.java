@@ -22,8 +22,8 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
         return sb.toString();
     }
 
-    public StatementMap inTraceOrder(StatementInstance startNode) {
-        StatementMap newChunk = AnalysisCache.getFromInTraceOrderChunkCache(this, startNode);
+    public StatementMap inTraceOrder(StatementInstance startNode, AnalysisCache analysisCache) {
+        StatementMap newChunk = analysisCache.getFromInTraceOrderChunkCache(this, startNode);
         if (newChunk != null) {
             return newChunk;
         }
@@ -50,7 +50,7 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
         if (startNode!=null) {
             newChunk.remove(startNode.toString());
         }
-        AnalysisCache.putInInTraceOrderChunkCache(this, startNode, newChunk);
+        analysisCache.putInInTraceOrderChunkCache(this, startNode, newChunk);
         return newChunk;
     }
 
