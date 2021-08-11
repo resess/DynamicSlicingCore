@@ -285,5 +285,31 @@ public class DynamicSlice
         }
         return sliceLines;
     }
+
+    public DynamicSlice union(DynamicSlice other) {
+        DynamicSlice unionSlice = new DynamicSlice();
+        unionSlice.addAll(this);
+        unionSlice.addAll(other);
+        for (Integer v: chopGraph.vertexSet()) {
+            unionSlice.chopGraph.addVertex(v);
+        }
+        for (DefaultWeightedEdge e: chopGraph.edgeSet()) {
+            Graphs.addEdgeWithVertices(unionSlice.chopGraph, chopGraph, e);
+        }
+        for (Integer v: other.chopGraph.vertexSet()) {
+            unionSlice.chopGraph.addVertex(v);
+        }
+        for (DefaultWeightedEdge e: other.chopGraph.edgeSet()) {
+            Graphs.addEdgeWithVertices(unionSlice.chopGraph, other.chopGraph, e);
+        }
+        
+        unionSlice.methodOfStatement.putAll(methodOfStatement);
+        unionSlice.methodOfStatement.putAll(other.methodOfStatement);
+
+        unionSlice.edgeTypes.addAll(edgeTypes);
+        unionSlice.edgeTypes.addAll(other.edgeTypes);
+
+        return unionSlice;
+    }
 }
 
