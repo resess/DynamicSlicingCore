@@ -180,7 +180,7 @@ public class FrameworkModel {
 
     private static Set<FrameworkAssignment> convertMethod(InvokeExpr expr){
         String methodSignature = expr.getMethod().getSignature();
-        if (!taintWrapperType.containsKey(methodSignature)) {
+        if (!stubDroidModel.containsKey(methodSignature)) {
             loadStubroidModel(expr, FrameworkModel.stubDroidPath);
             loadStubroidModel(expr, FrameworkModel.extraPath);
         }
