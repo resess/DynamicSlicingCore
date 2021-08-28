@@ -203,8 +203,8 @@ public class Traversal {
     }
 
     public CalledChunk getCalledChunk(int pos) {
-        StatementInstance iu = icdg.mapNoUnits(pos);
-        CalledChunk cached = analysisCache.getFromCalledChunkCache(iu);
+        StatementInstance start = icdg.mapNoUnits(pos);
+        CalledChunk cached = analysisCache.getFromCalledChunkCache(start);
         if (cached != null) {
             return cached;
         }
@@ -216,10 +216,10 @@ public class Traversal {
         foundBody = searchResult.getO2();
         if (icdg.mapNoUnits(pos) == null || !foundBody) {
             calledChunk.setChunk(null);
-            analysisCache.putInCalledChunkCache(iu, calledChunk);
+            analysisCache.putInCalledChunkCache(start, calledChunk);
             return calledChunk;
         }
-        iu = icdg.mapNoUnits(pos);
+        StatementInstance iu = icdg.mapNoUnits(pos);
         calledChunk.setRetLine(pos);
         calledChunk.setRetIu(iu);
         String currentMethod = iu.getMethod().getSignature();
@@ -242,13 +242,13 @@ public class Traversal {
 
         if (iu == null) {
             calledChunk.setChunk(null);
-            analysisCache.putInCalledChunkCache(iu, calledChunk);
+            analysisCache.putInCalledChunkCache(start, calledChunk);
             return calledChunk;
         }
 
         addReturnVariable(iu, calledChunk);
 
-        analysisCache.putInCalledChunkCache(iu, calledChunk);
+        analysisCache.putInCalledChunkCache(start, calledChunk);
         return calledChunk;
     }
 
