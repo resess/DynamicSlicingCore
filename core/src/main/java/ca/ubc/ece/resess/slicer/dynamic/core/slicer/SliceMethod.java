@@ -60,6 +60,13 @@ public class SliceMethod {
         
         if (variables.isEmpty()) {
             workingSet.addStmt(start, new Pair<>(start, new AccessPath(start.getLineNo(), AccessPath.NOT_DEFINED, start)), "data");
+            if (start.getCalledMethod() != null) {
+                CalledChunk chunk = traversal.getCalledChunk(start.getLineNo());
+                if (chunk.getChunk() != null && !chunk.getChunk().isEmpty()) {
+                    workingSet.addStmt(chunk.getRetIu(), new Pair<>(start, new AccessPath(chunk.getRetIu().getLineNo(), AccessPath.NOT_DEFINED, chunk.getRetIu())), "data");
+                }
+            }
+            
         } else {
             workingSet.addMultiple(start, variables, "data");
         }
@@ -88,7 +95,7 @@ public class SliceMethod {
 
             StatementMap chunk = traversal.getChunk(stmt);
             AnalysisLogger.log(Constants.DEBUG, "Slicing on {}", p);
-
+            AnalysisLogger.log(Constants.DEBUG, "With chunk {}", chunk);
             if (!dataFlowsOnly) {
                 dom = getControlDependence(workingSet, p, stmt, chunk);
                 AnalysisLogger.log(Constants.DEBUG, "Control-dom is {}", dom);
@@ -200,6 +207,8 @@ public class SliceMethod {
     }
 
     public StatementSet localReachingDef(StatementInstance iu, AccessPath ap, StatementMap chunk, AliasSet usedVars, boolean frameworkModel){
+        AnalysisLogger.log(Constants.DEBUG, "Getting localDef at: {}", iu);
+        StatementInstance caller = icdg.mapNoUnits(traversal.getCaller(chunk.values().iterator().next().getLineNo()));
         StatementSet defSet = new StatementSet();
         StatementSet defsInCalled = null;
         if (ap.isEmpty() || chunk == null) {
@@ -208,12 +217,20 @@ public class SliceMethod {
         Set<Pair<StatementInstance, AccessPath>> backwardDefVars = new LinkedHashSet<>();
         chunk = chunk.reverseTraceOrder(iu);
         boolean localFound = false;
+        StatementInstance prevUnit = null;
         for (StatementInstance u: chunk.values()) {
+            AnalysisLogger.log(Constants.DEBUG, "Inspecting: {}", u);
             if (localFound) {
                 break;
             }
             if (u.getLineNo() >= iu.getLineNo() || u.getUnit()==null) {
                 continue;
+            }
+            if (u.isReturn()) {
+                if (caller.getCalledMethod().getSignature().equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.Object)>")) {
+                    defSet.add(u);
+                    defSet.add(caller);
+                }
             }
             for (ValueBox def: u.getUnit().getDefBoxes()) {
                 if(def.getValue() instanceof Local) {
@@ -238,8 +255,24 @@ public class SliceMethod {
                     }
                 }
             }
+            if (u.getUnit() instanceof AssignStmt) {
+                Value right = ((AssignStmt) u.getUnit()).getRightOp();
+                if (right instanceof FieldRef) {
+                    for (ValueBox vb: ((FieldRef) right).getUseBoxes()){
+                        if (ap.baseEquals(vb.getValue().toString())) {
+                            if (prevUnit != null && frameworkModel && traversal.isFrameworkMethod(prevUnit)) {
+                                Value left = ((AssignStmt) u.getUnit()).getLeftOp();
+                                AccessPath leftAp = new AccessPath(left.toString(), left.getType(), AccessPath.NOT_USED, u.getLineNo(), u);
+                                if (FrameworkModel.localWrapper(prevUnit, leftAp, defSet, usedVars)) {
+                                    // pass
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             InvokeExpr invokeExpr = AnalysisUtils.getCallerExp(u);
-            // AnalysisLogger.log(Constants.DEBUG, "Invoke expr {}", invokeExpr);
+            AnalysisLogger.log(Constants.DEBUG, "Invoke expr {}", invokeExpr);
             if (invokeExpr != null) {
                 if (!traversal.isFrameworkMethod(u)) {
                     if (! (((Stmt) u.getUnit()) instanceof AssignStmt)) {
@@ -263,6 +296,7 @@ public class SliceMethod {
                     defSet.addAll(defsInCalled);
                 }
             }
+            prevUnit = u;
         }
         if (defSet.isEmpty()) {
             defSet.addAll(getReachingInCaller(iu, ap));

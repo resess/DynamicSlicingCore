@@ -1,13 +1,14 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.graph;
 
 import java.util.Set;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 
 import soot.Body;
@@ -142,7 +143,43 @@ public class DynamicControlFlowGraph extends Graph{
         removeReturnEdges();
         savePossibleCallback();
         saveStaticFields();
+        addInFrameworkCalls();
         return this;
+    }
+
+    public void addInFrameworkCalls() {
+        // add println to toString calls
+        Deque<StatementInstance> prevUnits = new ArrayDeque<>();
+        for (int i = 0; i < getLastLine(); i++) {
+            StatementInstance iu = mapNoUnits(i);
+            if (iu == null) {
+                continue;
+            }
+            for (StatementInstance prevUnit : prevUnits) {
+                SootMethod prevCalled = prevUnit.getCalledMethod();
+                if (prevCalled != null && prevCalled.getSignature().equals("<java.io.PrintStream: void println(java.lang.Object)>")) {
+                    if (iu.getMethod().getSubSignature().equals("java.lang.String toString()")) {
+                        if (predecessorListOf(iu.getLineNo()).isEmpty() && !iu.getMethod().getDeclaringClass().getName().startsWith(Constants.ANDROID_LIBS)) {
+                            setEdgeType(prevUnit.getLineNo(), iu.getLineNo(), EdgeType.CALL_EDGE);
+                            break;
+                        }
+                    }
+                }
+                if (prevCalled != null && prevCalled.getSignature().equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.Object)>")) {
+                    if (iu.getMethod().getSubSignature().equals("java.lang.String toString()")) {
+                        if (predecessorListOf(iu.getLineNo()).isEmpty() && !iu.getMethod().getDeclaringClass().getName().startsWith(Constants.ANDROID_LIBS)) {
+                            setEdgeType(prevUnit.getLineNo(), iu.getLineNo(), EdgeType.CALL_EDGE);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (prevUnits.size() > 100) {
+                prevUnits.removeLast();
+            }
+            prevUnits.push(iu);
+        }
     }
 
     private void addStatement(StatementInstance statementInstance) {
