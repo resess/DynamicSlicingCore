@@ -326,8 +326,14 @@ public class DynamicControlFlowGraph extends Graph{
             if (u instanceof AssignStmt) {
                 AssignStmt stmt = (AssignStmt) u;
                 Value left = stmt.getLeftOp();
+                Value right = stmt.getRightOp();
                 if (left instanceof FieldRef) {
                     if (((FieldRef) left).getUseBoxes().isEmpty()) {
+                        putStaticFieldUnitEdge(prevUnit, iu.getLineNo());
+                        prevUnit = iu.getLineNo();
+                    }
+                } else if (right instanceof FieldRef) {
+                    if (((FieldRef) right).getUseBoxes().isEmpty()) {
                         putStaticFieldUnitEdge(prevUnit, iu.getLineNo());
                         prevUnit = iu.getLineNo();
                     }
