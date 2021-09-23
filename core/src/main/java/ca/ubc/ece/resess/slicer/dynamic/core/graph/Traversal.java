@@ -1,13 +1,5 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.graph;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
@@ -17,20 +9,16 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import soot.Unit;
 import soot.Value;
-import soot.jimple.AssignStmt;
-import soot.jimple.IdentityStmt;
-import soot.jimple.InstanceInvokeExpr;
-import soot.jimple.InvokeExpr;
-import soot.jimple.InvokeStmt;
-import soot.jimple.ReturnStmt;
-import soot.jimple.ReturnVoidStmt;
-import soot.jimple.Stmt;
+import soot.jimple.*;
 import soot.toolkits.scalar.Pair;
+
+import java.util.*;
 
 public class Traversal {
 
-    private DynamicControlFlowGraph icdg;
-    private AnalysisCache analysisCache;
+    private final DynamicControlFlowGraph icdg;
+    private final AnalysisCache analysisCache;
+
     public Traversal(DynamicControlFlowGraph icdg, AnalysisCache analysisCache) {
         this.icdg = icdg;
         this.analysisCache = analysisCache;
@@ -39,7 +27,7 @@ public class Traversal {
     public Set<StatementInstance> previousNodes(StatementInstance iu) {
         Set<StatementInstance> previous = new LinkedHashSet<>();
         List<Integer> nodes = icdg.predecessorListOf(iu.getLineNo());
-        for (Integer node: nodes) {
+        for (Integer node : nodes) {
             StatementInstance next = icdg.mapNoUnits(node);
             if (next != null) {
                 previous.add(next);
@@ -51,7 +39,7 @@ public class Traversal {
     public Set<StatementInstance> nextNodes(StatementInstance iu) {
         Set<StatementInstance> following = new LinkedHashSet<>();
         List<Integer> nodes = icdg.successorListOf(iu.getLineNo());
-        for (Integer node: nodes) {
+        for (Integer node : nodes) {
             StatementInstance next = icdg.mapNoUnits(node);
             if (next != null) {
                 following.add(next);
@@ -59,7 +47,6 @@ public class Traversal {
         }
         return following;
     }
-
 
 
     public StatementMap getChunk(StatementInstance iu) {
@@ -89,10 +76,10 @@ public class Traversal {
         StatementMap chunk = new StatementMap();
         boolean done = false;
         int newPos = 0;
-        while(pos>=0 && !done) {
+        while (pos >= 0 && !done) {
             iu = icdg.mapNoUnits(pos);
-            if (iu!=null) {
-                if(iu.getMethod().getSignature().equals(currentMethod)) {
+            if (iu != null) {
+                if (iu.getMethod().getSignature().equals(currentMethod)) {
                     chunk.put(iu.getUnitId(), iu);
                 } else {
                     done = true;
@@ -111,7 +98,7 @@ public class Traversal {
 
     private int previousFlowEdge(int pos, int newPos) {
         List<Integer> preds = icdg.predecessorListOf(pos);
-        for (Integer pred: preds) {
+        for (Integer pred : preds) {
             Edge e = icdg.getEdge(pred, pos);
             if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
                 newPos = pred;
@@ -125,7 +112,7 @@ public class Traversal {
             return null;
         }
         CalledChunk calledChunk = getCalledChunk(pos);
-        if (calledChunk.getRetIu() != null){
+        if (calledChunk.getRetIu() != null) {
             if (((Stmt) icdg.mapNoUnits(pos).getUnit()).getInvokeExpr().getMethod().getName().equals(calledChunk.getRetIu().getMethod().getName())) {
                 if (calledChunk.getRetVariable() == null) {
                     InvokeExpr invokeExpr = AnalysisUtils.getCallerExp(icdg.mapNoUnits(pos));
@@ -150,12 +137,12 @@ public class Traversal {
         }
         StatementMap chunk = new StatementMap();
         StatementInstance iu = icdg.mapNoUnits(pos);
-        int newPos = 0;
+        int newPos;
         String currentMethod = iu.getMethod().getSignature();
-        while(pos>=0) {
+        while (pos >= 0) {
             iu = icdg.mapNoUnits(pos);
-            if (iu!=null) {
-                if(iu.getMethod().getSignature().equals(currentMethod)) {
+            if (iu != null) {
+                if (iu.getMethod().getSignature().equals(currentMethod)) {
                     chunk.put(iu.getUnitId(), iu);
                 } else {
                     break;
@@ -176,7 +163,7 @@ public class Traversal {
         int newPos = pos;
         List<Integer> successors = icdg.successorListOf(pos);
         Collections.sort(successors);
-        for (Integer s: successors) {
+        for (Integer s : successors) {
             Edge e = icdg.getEdge(pos, s);
             if (e.getEdgeType().equals(EdgeType.FLOW_EDGE)) {
                 newPos = s;
@@ -189,7 +176,7 @@ public class Traversal {
         int newPos = pos;
         List<Integer> successors = icdg.successorListOf(pos);
         Collections.sort(successors);
-        for (Integer s: successors) {
+        for (Integer s : successors) {
             Edge e = icdg.getEdge(pos, s);
             if (e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
                 newPos = s;
@@ -209,7 +196,7 @@ public class Traversal {
             return cached;
         }
         CalledChunk calledChunk = new CalledChunk();
-        int newPos = 0;
+        int newPos;
         boolean foundBody;
         Pair<Integer, Boolean> searchResult = searchForMethod(pos);
         pos = searchResult.getO1();
@@ -223,10 +210,10 @@ public class Traversal {
         calledChunk.setRetLine(pos);
         calledChunk.setRetIu(iu);
         String currentMethod = iu.getMethod().getSignature();
-        while(pos>=0) {
+        while (pos >= 0) {
             iu = icdg.mapNoUnits(pos);
-            if (iu!=null) {
-                if(iu.getMethod().getSignature().equals(currentMethod)) {
+            if (iu != null) {
+                if (iu.getMethod().getSignature().equals(currentMethod)) {
                     calledChunk.getChunk().put(iu.getUnitId(), iu);
                 } else {
                     break;
@@ -258,7 +245,7 @@ public class Traversal {
         List<Integer> successors = icdg.successorListOf(pos);
         searchResult.setO1(pos);
         searchResult.setO2(false);
-        for (Integer s: successors) {
+        for (Integer s : successors) {
             Edge e = icdg.getEdge(pos, s);
             if (e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
                 searchResult.setO1(s);
@@ -268,8 +255,6 @@ public class Traversal {
         }
         return searchResult;
     }
-
-
 
 
     private void addReturnVariable(StatementInstance iu, CalledChunk calledChunk) {
@@ -288,7 +273,7 @@ public class Traversal {
 
     private int checkForCaller(int pos) {
         List<Integer> preds = icdg.predecessorListOf(pos);
-        for (Integer pred: preds) {
+        for (Integer pred : preds) {
             Edge e = icdg.getEdge(pred, pos);
             try {
                 if (e.getEdgeType().equals(EdgeType.CALL_EDGE)) {
@@ -304,9 +289,9 @@ public class Traversal {
     }
 
 
-    public int getFirstStmt (int pos) {
+    public int getFirstStmt(int pos) {
         int newPos = pos;
-        while(pos>=0) {
+        while (pos >= 0) {
             newPos = previousFlowEdge(pos, newPos);
             if (newPos != pos) {
                 pos = newPos;
@@ -317,9 +302,9 @@ public class Traversal {
         return pos;
     }
 
-    public int getLastStmt (int pos) {
+    public int getLastStmt(int pos) {
         int newPos;
-        while(pos < icdg.getLastLine()) {
+        while (pos < icdg.getLastLine()) {
             newPos = nextFlowEdge(pos);
             if (newPos != pos) {
                 pos = newPos;
@@ -331,8 +316,7 @@ public class Traversal {
     }
 
 
-
-    public int getCaller (int pos) {
+    public int getCaller(int pos) {
         int startPos = pos;
         Integer cachedPos = analysisCache.getFromCallerCache(startPos);
         if (cachedPos != null) {
@@ -341,9 +325,9 @@ public class Traversal {
         StatementInstance iu = icdg.mapNoUnits(pos);
         String currentMethod = iu.getMethod().getSignature();
         int newPos = pos;
-        while(pos>=0) {
+        while (pos >= 0) {
             iu = icdg.mapNoUnits(pos);
-            if (iu!=null && !iu.getMethod().getSignature().equals(currentMethod)) {
+            if (iu != null && !iu.getMethod().getSignature().equals(currentMethod)) {
                 break;
             }
             newPos = previousFlowEdge(pos, newPos);
@@ -363,7 +347,7 @@ public class Traversal {
         AliasSet aliasedArgs = new AliasSet();
         AliasSet remainingSet = new AliasSet(aliasSet);
         AliasSet removedSet = new AliasSet();
-        InvokeExpr callerExp = null;
+        InvokeExpr callerExp;
         if (caller.getUnit() instanceof InvokeStmt) {
             callerExp = ((InvokeStmt) caller.getUnit()).getInvokeExpr();
         } else if (caller.getUnit() instanceof AssignStmt) {
@@ -372,10 +356,10 @@ public class Traversal {
             AnalysisLogger.warn(true, "unsupported call stmt {}", caller);
             return new Pair<>(aliasedArgs, remainingSet);
         }
-        
+
         List<Value> args = callerExp.getArgs();
         addReferenceVariableToArgs(callerExp, args);
-        int argPos = 0;
+        int argPos;
         int inc = 0;
         if (icdg.getSetterCallbackMap().containsKey(new Pair<>(caller.getMethod(), caller.getUnit()))) {
             inc = 1;
@@ -384,7 +368,7 @@ public class Traversal {
         StatementInstance source = getCalledChunk(caller.getLineNo()).getRetIu();
         Map<Integer, AccessPath> argParamMap = getArgParamMapCalled(source, caller, aliasSet, args);
 
-        // for(Value arg: args) {
+        // for (Value arg: args) {
         //     for (AccessPath ap: aliasSet) {
         //         if (ap.baseEquals(arg.toString())) {
         //             AccessPath aliasedArg = new AccessPath("$r"+String.valueOf(argPos+inc), arg.getType(), ap.getUsedLine(), ap.getDefinedLine(), caller).add(ap.getFields(), ap.getFieldsTypes(), caller);
@@ -401,8 +385,8 @@ public class Traversal {
                 aliasedArgs.add(param);
             }
         }
-        
-        for (AccessPath ap: aliasSet) {
+
+        for (AccessPath ap : aliasSet) {
             if (ap.isStaticField()) {
                 aliasedArgs.add(ap);
                 removedSet.add(ap);
@@ -425,7 +409,7 @@ public class Traversal {
             callerContext.setCaller(callerContext.getCallerChunk().values().iterator().next());
             analysisCache.putInCallerForwardChunk(iu, callerContext);
         }
-        for (Unit uu: callerContext.getCaller().getMethod().getActiveBody().getUnits()) {
+        for (Unit uu : callerContext.getCaller().getMethod().getActiveBody().getUnits()) {
             if (uu instanceof IdentityStmt) {
                 if (uu.toString().contains("@this") || uu.toString().contains("@parameter")) {
                     String base = uu.getDefBoxes().get(0).getValue().toString();
@@ -441,21 +425,20 @@ public class Traversal {
     }
 
     private void addAliasedAccessPaths(Set<AccessPath> aliasSet, AliasSet newAliasSet, String base) {
-        for (AccessPath ap: aliasSet) {
+        for (AccessPath ap : aliasSet) {
             if (ap.startsWith(base)) {
                 newAliasSet.add(ap);
             }
         }
     }
 
-    private void addStaticAccessPaths(Set<AccessPath> alaisSet, AliasSet newAliasSet) {
-        for (AccessPath ap: alaisSet) {
+    private void addStaticAccessPaths(Set<AccessPath> aliasSet, AliasSet newAliasSet) {
+        for (AccessPath ap : aliasSet) {
             if (ap.isStaticField()) {
                 newAliasSet.add(ap);
             }
         }
     }
-    
 
 
     public AliasSet changeScope(AliasSet originalAliasSet, StatementInstance source, StatementInstance destination) {
@@ -473,7 +456,7 @@ public class Traversal {
     public Map<Integer, AccessPath> getArgParamMapCaller(StatementInstance source, StatementInstance caller, AliasSet aliasSet) {
         Map<Integer, AccessPath> argParamMap = new LinkedHashMap<>();
         Integer argIndex = 0;
-        for (Unit uu: source.getMethod().getActiveBody().getUnits()) {
+        for (Unit uu : source.getMethod().getActiveBody().getUnits()) {
             if (uu instanceof IdentityStmt) {
                 if (uu.toString().contains("@this") || uu.toString().contains("@parameter")) {
                     addToParamMapCaller(aliasSet, argParamMap, argIndex, uu);
@@ -488,8 +471,8 @@ public class Traversal {
 
     public Map<Integer, AccessPath> getArgParamMapCalled(StatementInstance source, StatementInstance caller, AliasSet aliasSet, List<Value> args) {
         Map<Integer, AccessPath> argParamMap = new LinkedHashMap<>();
-        Integer argIndex = 0;
-        for (Unit uu: source.getMethod().getActiveBody().getUnits()) {
+        int argIndex = 0;
+        for (Unit uu : source.getMethod().getActiveBody().getUnits()) {
             if (uu instanceof IdentityStmt) {
                 if (uu.toString().contains("@this") || uu.toString().contains("@parameter")) {
                     if (argIndex < args.size()) {
@@ -507,7 +490,7 @@ public class Traversal {
 
     private void addToParamMapCaller(AliasSet aliasSet, Map<Integer, AccessPath> argParamMap, Integer argIndex, Unit uu) {
         String base = uu.getDefBoxes().get(0).getValue().toString();
-        for (AccessPath ap: aliasSet) {
+        for (AccessPath ap : aliasSet) {
             if (ap.startsWith(base)) {
                 argParamMap.put(argIndex, ap);
             }
@@ -515,11 +498,11 @@ public class Traversal {
     }
 
     private void addToParamMapCalled(AliasSet aliasSet, Map<Integer, AccessPath> argParamMap, Integer argIndex, Unit uu, Value arg) {
-        for (AccessPath ap: aliasSet) {
+        for (AccessPath ap : aliasSet) {
             if (ap.startsWith(arg.toString())) {
                 Value argVal = uu.getDefBoxes().get(0).getValue();
                 AccessPath argAp = new AccessPath(argVal.toString(), argVal.getType(), ap.getUsedLine(), ap.getDefinedLine(), ap.getStatementInstance());
-                AccessPath newAp = new AccessPath(argAp, ap.getStatementInstance()).add(ap.getAfter(argAp).getO1(), ap.getAfter(argAp).getO2(), ap.getStatementInstance()); 
+                AccessPath newAp = new AccessPath(argAp, ap.getStatementInstance()).add(ap.getAfter(argAp).getO1(), ap.getAfter(argAp).getO2(), ap.getStatementInstance());
                 argParamMap.put(argIndex, newAp);
             }
         }
@@ -534,7 +517,7 @@ public class Traversal {
         if (callerExp == null) {
             return aliasedArgs;
         }
-        
+
         List<Value> args = callerExp.getArgs();
         addReferenceVariableToArgs(callerExp, args);
         // int inc = 0;
@@ -542,7 +525,7 @@ public class Traversal {
         //     inc = 1;
         // }
         Map<Integer, AccessPath> argParamMap = getArgParamMapCaller(source, caller, aliasSet);
-        int argPos = 0;
+        int argPos;
         // for(Value arg: args) {
         //     for (AccessPath ap: aliasSet) {
         //         if (ap.getPath().isEmpty()) {
@@ -557,7 +540,7 @@ public class Traversal {
         //         AnalysisLogger.log(true, "P: {}", p);
         //         p.add(ap.getFields(), ap.getFieldsTypes(), caller);
         //         AnalysisLogger.log(true, "P: {}", p);
-        //         translateVaribleToCaller(caller, aliasedArgs, args, inc, argPos, ap, p);
+        //         translateVariableToCaller(caller, aliasedArgs, args, inc, argPos, ap, p);
         //         AnalysisLogger.log(true, "AliasedArgs first loop: {}", aliasedArgs);
         //     }
         //     argPos++;
@@ -593,7 +576,7 @@ public class Traversal {
 
 
     private void propagateStaticVariablesToCaller(AliasSet aliasSet, AliasSet aliasedArgs) {
-        for (AccessPath v: aliasSet) {
+        for (AccessPath v : aliasSet) {
             if (v.isStaticField()) {
                 aliasedArgs.add(v);
             }
@@ -610,12 +593,11 @@ public class Traversal {
     }
 
 
-
-    private void translateVaribleToCaller(StatementInstance caller, AliasSet aliasedArgs, List<Value> args, int inc, int argPos,
-            AccessPath ap, AccessPath p) {
+    private void translateVariableToCaller(StatementInstance caller, AliasSet aliasedArgs, List<Value> args, int inc, int argPos,
+                                           AccessPath ap, AccessPath p) {
         try {
-            if(p.pathEquals(ap)) {
-                Value tArg = args.get(argPos+inc);
+            if (p.pathEquals(ap)) {
+                Value tArg = args.get(argPos + inc);
                 if (!AnalysisUtils.isInteger(tArg.toString())) {
                     AccessPath aliasedArg = new AccessPath(tArg.toString(), tArg.getType(), ap.getUsedLine(), ap.getDefinedLine(), caller).add(p.getFields(), p.getFieldsTypes(), caller);
                     aliasedArgs.add(aliasedArg);
@@ -626,7 +608,7 @@ public class Traversal {
         }
     }
 
-    public boolean isFrameworkMethod(StatementInstance iu){
+    public boolean isFrameworkMethod(StatementInstance iu) {
         return iu.containsInvokeExpr() && (getCalledChunk(iu.getLineNo()).getChunk() == null);
     }
 

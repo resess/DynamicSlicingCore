@@ -9,24 +9,20 @@ import ca.ubc.ece.resess.slicer.dynamic.core.graph.Traversal;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementSet;
-import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
 import soot.Unit;
 import soot.Value;
-import soot.jimple.AssignStmt;
-import soot.jimple.FieldRef;
-import soot.jimple.InstanceInvokeExpr;
-import soot.jimple.InvokeExpr;
-import soot.jimple.Stmt;
+import soot.jimple.*;
 import soot.toolkits.scalar.Pair;
 
 public class BackwardStaticFieldAnalysis {
-    private StatementInstance startUnit;
-    private AccessPath startField;
-    private StatementSet aliasPath;
-    private DynamicControlFlowGraph icdg;
-    private Traversal traversal;
-    
+    private final StatementInstance startUnit;
+    private final AccessPath startField;
+    private final StatementSet aliasPath;
+    private final DynamicControlFlowGraph icdg;
+    private final Traversal traversal;
+
     public BackwardStaticFieldAnalysis(DynamicControlFlowGraph icdg, StatementInstance startUnit, AccessPath ap, StatementSet aliasPath, AnalysisCache analysisCache) {
         this.icdg = icdg;
         this.startUnit = startUnit;
@@ -45,16 +41,16 @@ public class BackwardStaticFieldAnalysis {
 
     private boolean findForward(AliasSet taintSet) {
         boolean found = false;
-        int pos = startUnit.getLineNo()+1;
-        long end = (long) (pos + Constants.SEARCH_LENGTH);
-        end = (end> icdg.getLastLine())? icdg.getLastLine(): end;
+        int pos = startUnit.getLineNo() + 1;
+        long end = pos + Constants.SEARCH_LENGTH;
+        end = Math.min(end, icdg.getLastLine());
         while (pos < end) {
             StatementInstance si = icdg.mapNoUnits(pos);
             if (si == null || !si.getMethod().getName().equals("<clinit>")) {
                 pos++;
                 continue;
             }
- 
+
             Pair<Boolean, Boolean> flags = new Pair<>();
             flags.setO1(false);
             flags.setO2(false);
@@ -78,13 +74,13 @@ public class BackwardStaticFieldAnalysis {
             AssignStmt stmt = (AssignStmt) u;
             Value left = stmt.getLeftOp();
             Value right = stmt.getRightOp();
-            if ((left instanceof FieldRef) && ((FieldRef) left).getUseBoxes().isEmpty()) {
+            if ((left instanceof FieldRef) && left.getUseBoxes().isEmpty()) {
                 AccessPath var = new AccessPath(((FieldRef) left).getField().getDeclaringClass().getName(), ((FieldRef) left).getField().getType(), AccessPath.NOT_USED, si.getLineNo(), si);
                 var.add(((FieldRef) left).getField().getName(), ((FieldRef) left).getField().getType(), si);
                 var.setStaticField();
                 if (startField.startsWith(var)) {
                     AccessPath rightAp = new AccessPath(right.toString(), right.getType(), si.getLineNo(), AccessPath.NOT_DEFINED, si);
-                    AccessPath newAp = new AccessPath(rightAp, si).add(startField.getAfter(var).getO1(), startField.getAfter(var).getO2(), si); 
+                    AccessPath newAp = new AccessPath(rightAp, si).add(startField.getAfter(var).getO1(), startField.getAfter(var).getO2(), si);
                     taintSet.add(newAp);
                     aliasPath.add(si);
                     flags.setO1(true);
@@ -93,7 +89,7 @@ public class BackwardStaticFieldAnalysis {
                     flags.setO2(true);
                 }
             } else if (right instanceof FieldRef) {
-                if (!matchReferenceVaraibleDefintion(si, startField.getField(), left, right)) {
+                if (!matchReferenceVariableDefinition(si, startField.getField(), left, (FieldRef) right)) {
                     newPos = gotToNextStaticField(pos);
                     flags.setO2(true);
                 }
@@ -102,23 +98,21 @@ public class BackwardStaticFieldAnalysis {
         return newPos;
     }
 
-    private boolean matchReferenceVaraibleDefintion(StatementInstance possibleIu, String fieldName, Value left, Value right) {
-        String usedField = ((FieldRef) right).getField().getName();
+    private boolean matchReferenceVariableDefinition(StatementInstance possibleIu, String fieldName, Value left, FieldRef right) {
+        String usedField = right.getField().getName();
         StatementMap chunk = traversal.getForwardChunk(possibleIu.getLineNo());
-        for (StatementInstance prev: chunk.values()) {
-            if (prev.getLineNo() <= possibleIu.getLineNo()) {
+        for (StatementInstance prev : chunk.values()) {
+            if (prev.getLineNo() <= possibleIu.getLineNo() || !usedField.equals(fieldName)) {
                 continue;
             }
-            if (usedField.equals(fieldName)) {
-                Stmt prevStmt = (Stmt) prev.getUnit();
-                if (prevStmt.containsInvokeExpr() && traversal.isFrameworkMethod(prev)) {
-                    InvokeExpr expr = prevStmt.getInvokeExpr();
-                    if (expr instanceof InstanceInvokeExpr) {
-                        AccessPath instance = new AccessPath(left.toString(), left.getType(), startUnit.getLineNo(), startUnit.getLineNo(), startUnit);
-                        if (FrameworkModel.definesInstance(prev, instance)) {
-                            aliasPath.add(prev);
-                            return true;
-                        }
+            Stmt prevStmt = (Stmt) prev.getUnit();
+            if (prevStmt.containsInvokeExpr() && traversal.isFrameworkMethod(prev)) {
+                InvokeExpr expr = prevStmt.getInvokeExpr();
+                if (expr instanceof InstanceInvokeExpr) {
+                    AccessPath instance = new AccessPath(left.toString(), left.getType(), startUnit.getLineNo(), startUnit.getLineNo(), startUnit);
+                    if (FrameworkModel.definesInstance(prev, instance)) {
+                        aliasPath.add(prev);
+                        return true;
                     }
                 }
             }
@@ -147,7 +141,7 @@ public class BackwardStaticFieldAnalysis {
     }
 
     private boolean findBackwards(AliasSet taintSet) {
-        int pos = startUnit.getLineNo()-1;
+        int pos = startUnit.getLineNo() - 1;
         boolean found = false;
 
         while (pos > -1) {
@@ -180,13 +174,13 @@ public class BackwardStaticFieldAnalysis {
             AssignStmt stmt = (AssignStmt) u;
             Value left = stmt.getLeftOp();
             Value right = stmt.getRightOp();
-            if ((left instanceof FieldRef) && ((FieldRef) left).getUseBoxes().isEmpty()) {
+            if ((left instanceof FieldRef) && left.getUseBoxes().isEmpty()) {
                 AccessPath var = new AccessPath(((FieldRef) left).getField().getDeclaringClass().getName(), ((FieldRef) left).getField().getType(), AccessPath.NOT_USED, si.getLineNo(), si);
                 var.add(((FieldRef) left).getField().getName(), ((FieldRef) left).getField().getType(), si);
                 var.setStaticField();
                 if (startField.startsWith(var)) {
                     AccessPath rightAp = new AccessPath(right.toString(), right.getType(), si.getLineNo(), AccessPath.NOT_DEFINED, si);
-                    AccessPath newAp = new AccessPath(rightAp, si).add(startField.getAfter(var).getO1(), startField.getAfter(var).getO2(), si); 
+                    AccessPath newAp = new AccessPath(rightAp, si).add(startField.getAfter(var).getO1(), startField.getAfter(var).getO2(), si);
                     taintSet.add(newAp);
                     aliasPath.add(si);
                     flags.setO1(true);
@@ -195,7 +189,7 @@ public class BackwardStaticFieldAnalysis {
                     flags.setO2(true);
                 }
             } else if (right instanceof FieldRef) {
-                if (!matchReferenceVaraibleDefintion(si, startField.getField(), left, right)) {
+                if (!matchReferenceVariableDefinition(si, startField.getField(), left, (FieldRef) right)) {
                     newPos = goToPrevStaticField(pos);
                     flags.setO2(true);
                 }

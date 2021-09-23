@@ -17,17 +17,17 @@ public class FrameworkAssignment {
         RETURN, INSTANCE, PARAM, CLEAR, UNKNOW
     }
 
-    String leftPath = "";
-    String rightPath = "";
-    Integer leftParam = Constants.UNKNOWN;
-    Integer rightParam = Constants.UNKNOWN;
-    VariableType leftType = VariableType.UNKNOW;
-    VariableType rightType = VariableType.UNKNOW;
+    String leftPath;
+    String rightPath;
+    final Integer leftParam;
+    final Integer rightParam;
+    final VariableType leftType;
+    final VariableType rightType;
 
     FrameworkAssignment(Integer lp, Integer rp) {
         this(lp, rp, "", "");
     }
-    
+
 
     FrameworkAssignment(Integer lp, Integer rp, String l, String r) {
         this.leftParam = lp;
@@ -55,14 +55,14 @@ public class FrameworkAssignment {
             leftPath = leftPath.substring(1);
         }
         if (leftPath.endsWith("]")) {
-            leftPath = leftPath.substring(0, leftPath.length()-1);
+            leftPath = leftPath.substring(0, leftPath.length() - 1);
         }
 
         if (rightPath.startsWith("[")) {
             rightPath = rightPath.substring(1);
         }
         if (rightPath.endsWith("]")) {
-            rightPath = rightPath.substring(0, rightPath.length()-1);
+            rightPath = rightPath.substring(0, rightPath.length() - 1);
         }
     }
 
@@ -73,13 +73,14 @@ public class FrameworkAssignment {
         }
         AccessPath accessPath = new AccessPath(expr.getArg(leftParam).toString(), expr.getArg(leftParam).getType(), AccessPath.NOT_USED, lineNo, si);
         if (!leftPath.isEmpty()) {
-            final String[] splitted = leftPath.split("\\s+");
-            String field = splitted[2];
-            accessPath.add(field, new Type(){
+            final String[] split = leftPath.split("\\s+");
+            String field = split[2];
+            accessPath.add(field, new Type() {
                 private static final long serialVersionUID = 1L;
+
                 @Override
                 public String toString() {
-                    return splitted[1];
+                    return split[1];
                 }
             }, si);
         }
@@ -96,8 +97,9 @@ public class FrameworkAssignment {
         if (!leftPath.isEmpty()) {
             final String[] splitted = leftPath.split("\\s+");
             String field = splitted[2];
-            accessPath.add(field, new Type(){
+            accessPath.add(field, new Type() {
                 private static final long serialVersionUID = 1L;
+
                 @Override
                 public String toString() {
                     return splitted[1];
@@ -116,8 +118,9 @@ public class FrameworkAssignment {
         if (!leftPath.isEmpty()) {
             final String[] splitted = leftPath.split("\\s+");
             String field = splitted[2];
-            accessPath.add(field, new Type(){
+            accessPath.add(field, new Type() {
                 private static final long serialVersionUID = 1L;
+
                 @Override
                 public String toString() {
                     return splitted[1];
@@ -132,13 +135,14 @@ public class FrameworkAssignment {
         if (rightType.equals(VariableType.CLEAR)) {
             rightAccessPath = new AccessPath(lineNo, AccessPath.NOT_DEFINED, si);
         } else if (rightType.equals(VariableType.PARAM)) {
-            if (!(invokeExpr.getArg(rightParam) instanceof Constant)&& !(AnalysisUtils.isPrimitiveType(invokeExpr.getArg(rightParam)))) {
+            if (!(invokeExpr.getArg(rightParam) instanceof Constant) && !(AnalysisUtils.isPrimitiveType(invokeExpr.getArg(rightParam)))) {
                 rightAccessPath = new AccessPath(invokeExpr.getArg(rightParam).toString(), invokeExpr.getArg(rightParam).getType(), lineNo, AccessPath.NOT_DEFINED, si);
                 if (!rightPath.isEmpty()) {
                     final String[] splitted = rightPath.split("\\s+");
                     String field = splitted[2];
-                    rightAccessPath.add(field, new Type(){
+                    rightAccessPath.add(field, new Type() {
                         private static final long serialVersionUID = 1L;
+
                         @Override
                         public String toString() {
                             return splitted[1];
@@ -184,9 +188,9 @@ public class FrameworkAssignment {
         if (leftType.equals(VariableType.PARAM)) {
             sb.append(leftParam);
         } else {
-            sb.append(leftType.toString());
+            sb.append(leftType);
         }
-        
+
         if (!leftPath.isEmpty()) {
             sb.append(".");
             sb.append(leftPath);
@@ -196,9 +200,9 @@ public class FrameworkAssignment {
         if (rightType.equals(VariableType.PARAM)) {
             sb.append(rightParam);
         } else {
-            sb.append(rightType.toString());
+            sb.append(rightType);
         }
-        
+
         if (!rightPath.isEmpty()) {
             sb.append(".");
             sb.append(rightPath);
@@ -208,24 +212,24 @@ public class FrameworkAssignment {
 
     @Override
     public int hashCode() {
-        return 17 + 
-                31*leftPath.hashCode() + 
-                31*rightPath.hashCode() +
-                31*leftParam.hashCode() + 
-                31*rightParam.hashCode() + 
-                31*leftType.hashCode()+
-                31*rightType.hashCode();
+        return 17 +
+                31 * leftPath.hashCode() +
+                31 * rightPath.hashCode() +
+                31 * leftParam.hashCode() +
+                31 * rightParam.hashCode() +
+                31 * leftType.hashCode() +
+                31 * rightType.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof FrameworkAssignment) {
             FrameworkAssignment other = (FrameworkAssignment) obj;
-            return  this.leftPath.equals(other.leftPath) && 
-                    this.rightPath.equals(other.rightPath) && 
-                    this.leftParam.equals(other.leftParam) && 
-                    this.rightParam.equals(other.rightParam) && 
-                    this.leftType.equals(other.leftType) && 
+            return this.leftPath.equals(other.leftPath) &&
+                    this.rightPath.equals(other.rightPath) &&
+                    this.leftParam.equals(other.leftParam) &&
+                    this.rightParam.equals(other.rightParam) &&
+                    this.leftType.equals(other.leftType) &&
                     this.rightType.equals(other.rightType);
         }
         return false;

@@ -1,11 +1,10 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.statements;
 
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 
 
 public class StatementMap extends LinkedHashMap<String, StatementInstance> {
@@ -32,7 +31,7 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
         for (Map.Entry<String, StatementInstance> entry : this.entrySet()) {
             orderedTrace.add(entry.getValue());
         }
-        Collections.sort(orderedTrace, (lhs, rhs) -> {
+        orderedTrace.sort((lhs, rhs) -> {
             if (rhs.getLineNo() < lhs.getLineNo()) {
                 return 1;
             } else if (rhs.getLineNo() > lhs.getLineNo()) {
@@ -47,7 +46,7 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
         //     }
         //     newChunk.put(iu.toString(), iu);
         // }
-        if (startNode!=null) {
+        if (startNode != null) {
             newChunk.remove(startNode.toString());
         }
         analysisCache.putInInTraceOrderChunkCache(this, startNode, newChunk);
@@ -60,7 +59,7 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
         for (Map.Entry<String, StatementInstance> entry : this.entrySet()) {
             orderedTrace.add(entry.getValue());
         }
-        Collections.sort(orderedTrace, (lhs, rhs) -> {
+        orderedTrace.sort((lhs, rhs) -> {
             if (rhs.getLineNo() > lhs.getLineNo()) {
                 return 1;
             } else if (rhs.getLineNo() < lhs.getLineNo()) {
@@ -69,7 +68,7 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
             return 0;
         });
 
-        for (StatementInstance iu: orderedTrace){
+        for (StatementInstance iu : orderedTrace) {
             if (iu.equals(startNode)) {
                 continue;
             }

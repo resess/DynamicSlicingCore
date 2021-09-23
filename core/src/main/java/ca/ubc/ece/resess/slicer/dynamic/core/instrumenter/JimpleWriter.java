@@ -1,18 +1,20 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.instrumenter;
 
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import soot.PackManager;
 import soot.Scene;
 import soot.options.Options;
+
 import java.util.Arrays;
-import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 
 public class JimpleWriter {
-    private String outFilePath;
+    private final String outFilePath;
+
     public JimpleWriter(String outDir) {
         this.outFilePath = outDir + "/jimple_code/";
     }
 
-    
+
     void initialize(String execPath) {
         AnalysisLogger.log(true, "Initializing Instrumenter");
         if (execPath.endsWith(".apk")) {
@@ -29,7 +31,7 @@ public class JimpleWriter {
         AnalysisLogger.log(true, "Initialization done");
     }
 
-    public void start (String execPath) {
+    public void start(String execPath) {
         // soot.G.reset();
         initialize(execPath);
         Scene.v().loadNecessaryClasses();

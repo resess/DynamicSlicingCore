@@ -11,7 +11,7 @@ public class CalledChunk {
     Type retVarType;
     StatementInstance retIu;
 
-    public CalledChunk(){
+    public CalledChunk() {
         chunk = new StatementMap();
         retLine = -1;
     }

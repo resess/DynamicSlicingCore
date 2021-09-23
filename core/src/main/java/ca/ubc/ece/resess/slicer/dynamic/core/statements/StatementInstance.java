@@ -4,32 +4,27 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import soot.SootMethod;
 import soot.Type;
 import soot.Unit;
-import soot.jimple.AssignStmt;
-import soot.jimple.InvokeExpr;
-import soot.jimple.ReturnStmt;
-import soot.jimple.ReturnVoidStmt;
-import soot.jimple.Stmt;
-import soot.jimple.ThrowStmt;
+import soot.jimple.*;
 
 public class StatementInstance {
-    
-    private Unit u;
-    private SootMethod sm;
-    private int lineNo = -1;
+
+    private final Unit u;
+    private final SootMethod sm;
+    private final int lineNo;
     private StatementMap returnChunk;
     private long threadID = -1L;
     private long fieldId = -1L;
-    private int javaSourceLineNo = -1;
-    private String javaSourceFile = "UNKNOWN";
+    private final int javaSourceLineNo;
+    private final String javaSourceFile;
 
 
     public StatementInstance(SootMethod sm, Unit u, int lineNo, Long tid, Long fieldId, Integer javaSourceLineNo, String javaSourceFile) {
         this.sm = sm;
         this.u = u;
         this.lineNo = lineNo;
-        if(tid != null){
+        if (tid != null) {
             this.threadID = tid;
-        } 
+        }
         if ((u instanceof AssignStmt) && ((AssignStmt) u).containsFieldRef()) {
             this.fieldId = fieldId;
         }
@@ -44,7 +39,7 @@ public class StatementInstance {
     public Unit getUnit() {
         return u;
     }
-    
+
     public int getLineNo() {
         return lineNo;
     }
@@ -53,14 +48,14 @@ public class StatementInstance {
         return threadID;
     }
 
-    public SootMethod getMethod(){
+    public SootMethod getMethod() {
         return sm;
     }
 
     public SootMethod getCalledMethod() {
         if (((Stmt) u).containsInvokeExpr()) {
             return ((Stmt) u).getInvokeExpr().getMethod();
-        } 
+        }
         return null;
     }
 
@@ -73,18 +68,16 @@ public class StatementInstance {
     }
 
     public String getUnitId() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(lineNo);
-        sb.append(", ");
-        sb.append(sm.getSubSignature().replace(",", ";"));
-        sb.append(", ");
-        sb.append(sm.getDeclaringClass().getName());
-        sb.append(", ");
-        sb.append((u==null? "null":u.toString().replace(",", ";")));
-        sb.append((fieldId==-1L? "":":FIELD:"+fieldId));
-        sb.append((javaSourceLineNo==-1? "":":LINENO:"+javaSourceLineNo));
-        sb.append((javaSourceFile.equals("")? "":":FILE:"+javaSourceFile));
-        return sb.toString();
+        return lineNo +
+                ", " +
+                sm.getSubSignature().replace(",", ";") +
+                ", " +
+                sm.getDeclaringClass().getName() +
+                ", " +
+                (u == null ? "null" : u.toString().replace(",", ";")) +
+                (fieldId == -1L ? "" : ":FIELD:" + fieldId) +
+                (javaSourceLineNo == -1 ? "" : ":LINENO:" + javaSourceLineNo) +
+                (javaSourceFile.equals("") ? "" : ":FILE:" + javaSourceFile);
     }
 
     @Override
@@ -109,11 +102,11 @@ public class StatementInstance {
         }
         StatementInstance otherUnit = (StatementInstance) other;
         return otherUnit.u.equals(u) &&
-               otherUnit.lineNo == lineNo &&
-               otherUnit.sm.equals(sm);
+                otherUnit.lineNo == lineNo &&
+                otherUnit.sm.equals(sm);
     }
-    
-    public boolean isReturn(){
+
+    public boolean isReturn() {
         return (this.u instanceof ReturnStmt) || (this.u instanceof ReturnVoidStmt);
     }
 
@@ -157,28 +150,20 @@ public class StatementInstance {
         return fieldId;
     }
 
-    public boolean hasPossibleSetter(){
-        if ((u instanceof Stmt) && (((Stmt)u).containsInvokeExpr())) {
+    public boolean hasPossibleSetter() {
+        if ((u instanceof Stmt) && (((Stmt) u).containsInvokeExpr())) {
             InvokeExpr expr = AnalysisUtils.getCallerExp(this);
-            if (expr.getMethod().getName().startsWith("set")) {
-                return true;
-            }
+            return expr.getMethod().getName().startsWith("set");
         }
         return false;
     }
 
-    public boolean containsInvokeExpr(){
-        if ((u instanceof Stmt) && (((Stmt)u).containsInvokeExpr())) {
-            return true;
-        }
-        return false;
+    public boolean containsInvokeExpr() {
+        return (u instanceof Stmt) && (((Stmt) u).containsInvokeExpr());
     }
 
     public boolean isAssign() {
-        if (this.u instanceof AssignStmt) {
-            return true;
-        }
-        return false;
+        return this.u instanceof AssignStmt;
     }
 
     public boolean isAfter(StatementInstance other) {

@@ -10,10 +10,11 @@ public class CallerContext {
     AliasSet aliasedArgs;
     boolean isForwardChunk = false;
     boolean isCallback = false;
+
     @Override
     public String toString() {
-        return  "Caller: " + caller + "\n" +
-                "Caller body: " + callerChunk + "\n" + 
+        return "Caller: " + caller + "\n" +
+                "Caller body: " + callerChunk + "\n" +
                 "Aliased args: " + aliasedArgs + "\n" +
                 "IsForwardChunk: " + isForwardChunk + "\n" +
                 "IsCallback: " + isCallback;
@@ -26,10 +27,10 @@ public class CallerContext {
         }
         CallerContext other = (CallerContext) obj;
         return this.caller.equals(other.caller)
-            && this.callerChunk.equals(other.callerChunk)
-            && this.aliasedArgs.equals(other.aliasedArgs)
-            && this.isForwardChunk == other.isForwardChunk
-            && this.isCallback == other.isCallback;
+                && this.callerChunk.equals(other.callerChunk)
+                && this.aliasedArgs.equals(other.aliasedArgs)
+                && this.isForwardChunk == other.isForwardChunk
+                && this.isCallback == other.isCallback;
     }
 
     @Override
@@ -38,20 +39,23 @@ public class CallerContext {
         result = 31 * result + caller.hashCode();
         result = 31 * result + callerChunk.hashCode();
         result = 31 * result + aliasedArgs.hashCode();
-        result = 31 * result + ((isForwardChunk)? 1:0);
-        result = 31 * result + ((isCallback)? 1:0);
+        result = 31 * result + ((isForwardChunk) ? 1 : 0);
+        result = 31 * result + ((isCallback) ? 1 : 0);
         return result;
     }
 
     public void setForwardChunk(boolean isForwardChunk) {
         this.isForwardChunk = isForwardChunk;
     }
+
     public boolean isForwardChunk() {
         return isForwardChunk;
     }
+
     public void setCallback(boolean isCallback) {
         this.isCallback = isCallback;
     }
+
     public boolean isCallback() {
         return isCallback;
     }

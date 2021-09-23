@@ -2,7 +2,6 @@ package ca.ubc.ece.resess.slicer.dynamic.core.statements;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -40,9 +39,8 @@ public class StatementSet extends LinkedHashSet<StatementInstance> {
 
     public StatementSet reorder() {
         StatementSet ordered = new StatementSet();
-        List<StatementInstance> orderedList = new ArrayList<>();
-        orderedList.addAll(this);
-        Collections.sort(orderedList, (lhs, rhs) -> {
+        List<StatementInstance> orderedList = new ArrayList<>(this);
+        orderedList.sort((lhs, rhs) -> {
             if (rhs.getLineNo() > lhs.getLineNo()) {
                 return 1;
             } else if (rhs.getLineNo() < lhs.getLineNo()) {
@@ -50,7 +48,7 @@ public class StatementSet extends LinkedHashSet<StatementInstance> {
             }
             return 0;
         });
-        for (StatementInstance iu: orderedList) {
+        for (StatementInstance iu : orderedList) {
             if (!ordered.contains(iu)) {
                 ordered.add(iu);
             }
@@ -61,7 +59,7 @@ public class StatementSet extends LinkedHashSet<StatementInstance> {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (StatementInstance iu: this) {
+        for (StatementInstance iu : this) {
             sb.append("\n");
             sb.append("    ");
             sb.append(iu);
