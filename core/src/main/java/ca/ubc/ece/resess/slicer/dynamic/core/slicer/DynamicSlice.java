@@ -244,7 +244,7 @@ public class DynamicSlice
             String edgeStr = "control, no variable";
             AccessPath sliceEdge = entry.getO2().getO2();
             if (edge.equals("data")) {
-                edgeStr = "data, varaible:" + sliceEdge.getPathString();
+                edgeStr = "data, variable:" + sliceEdge.getPathString();
             }
             if (sliceEdge.getPathString().isEmpty()) {
                 edgeStr = "start";

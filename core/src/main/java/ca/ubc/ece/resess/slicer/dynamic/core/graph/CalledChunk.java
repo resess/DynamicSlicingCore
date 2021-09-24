@@ -18,16 +18,15 @@ public class CalledChunk {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("ret variable: ");
-        sb.append(retVariable);
-        sb.append("\n");
-        sb.append("ret type: ");
-        sb.append(retVarType);
-        sb.append("\n");
-        sb.append("chunk: ");
-        sb.append(chunk);
-        return sb.toString();
+        String sb = "ret variable: " +
+            retVariable +
+            "\n" +
+            "ret type: " +
+            retVarType +
+            "\n" +
+            "chunk: " +
+            chunk;
+        return sb;
     }
 
     public StatementMap getChunk() {
