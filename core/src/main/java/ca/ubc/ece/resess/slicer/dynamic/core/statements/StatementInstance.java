@@ -4,7 +4,12 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import soot.SootMethod;
 import soot.Type;
 import soot.Unit;
-import soot.jimple.*;
+import soot.jimple.AssignStmt;
+import soot.jimple.InvokeExpr;
+import soot.jimple.ReturnStmt;
+import soot.jimple.ReturnVoidStmt;
+import soot.jimple.Stmt;
+import soot.jimple.ThrowStmt;
 
 public class StatementInstance {
 

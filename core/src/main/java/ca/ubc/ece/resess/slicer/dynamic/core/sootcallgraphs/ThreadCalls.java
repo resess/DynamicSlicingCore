@@ -23,7 +23,16 @@ package ca.ubc.ece.resess.slicer.dynamic.core.sootcallgraphs;
  */
 
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
-import soot.*;
+import soot.Body;
+import soot.Kind;
+import soot.Local;
+import soot.PhaseOptions;
+import soot.RefType;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Unit;
+import soot.Value;
 import soot.jimple.DynamicInvokeExpr;
 import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;

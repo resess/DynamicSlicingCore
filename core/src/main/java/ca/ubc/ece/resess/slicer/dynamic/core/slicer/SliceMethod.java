@@ -17,7 +17,13 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
 import soot.Local;
 import soot.Value;
 import soot.ValueBox;
-import soot.jimple.*;
+import soot.jimple.ArrayRef;
+import soot.jimple.AssignStmt;
+import soot.jimple.CastExpr;
+import soot.jimple.FieldRef;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.InvokeExpr;
+import soot.jimple.Stmt;
 import soot.toolkits.scalar.Pair;
 
 import java.util.LinkedHashSet;

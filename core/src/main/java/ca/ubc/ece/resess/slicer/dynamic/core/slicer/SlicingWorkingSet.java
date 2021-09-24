@@ -13,7 +13,11 @@ import soot.jimple.FieldRef;
 import soot.jimple.Stmt;
 import soot.toolkits.scalar.Pair;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SlicingWorkingSet extends ArrayDeque<Pair<StatementInstance, AccessPath>> {

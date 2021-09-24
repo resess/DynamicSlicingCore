@@ -1,8 +1,28 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.instrumenter;
 
 
-import soot.*;
-import soot.jimple.*;
+import soot.Body;
+import soot.Local;
+import soot.LongType;
+import soot.PatchingChain;
+import soot.RefType;
+import soot.Scene;
+import soot.SootClass;
+import soot.SootMethod;
+import soot.Unit;
+import soot.jimple.AbstractStmtSwitch;
+import soot.jimple.AssignStmt;
+import soot.jimple.DefinitionStmt;
+import soot.jimple.IfStmt;
+import soot.jimple.InvokeStmt;
+import soot.jimple.Jimple;
+import soot.jimple.LookupSwitchStmt;
+import soot.jimple.ReturnStmt;
+import soot.jimple.ReturnVoidStmt;
+import soot.jimple.Stmt;
+import soot.jimple.StringConstant;
+import soot.jimple.SwitchStmt;
+import soot.jimple.ThrowStmt;
 
 
 public class StmtSwitch extends AbstractStmtSwitch {
