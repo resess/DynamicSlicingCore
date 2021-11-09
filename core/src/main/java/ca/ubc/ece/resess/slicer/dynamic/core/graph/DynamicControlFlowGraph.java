@@ -50,6 +50,7 @@ public class DynamicControlFlowGraph extends Graph{
     private Map <Integer, StatementInstance> mapNumberUnits = new LinkedHashMap<>();
     private List<StatementInstance> traceList = new ArrayList<>();
     private long lastLine;
+    private int prevLine = -1;
 
     public List<StatementInstance> getTraceList() {
         return traceList;
@@ -79,7 +80,7 @@ public class DynamicControlFlowGraph extends Graph{
     public DynamicControlFlowGraph createDCFG(List<TraceStatement> tr) {
         Chain<SootClass> chain = Scene.v().getApplicationClasses();
         Map<String, SootMethod> allMethods = createMethodsMap(chain);
-        Map<SootMethod, Map <String, Unit>> unitStringsCache = new HashMap<>();
+        Map<SootMethod, Map <String, List<Unit>>> unitStringsCache = new HashMap<>();
 
         AnalysisLogger.log(true, "Trace size: {}", tr.size());
         StatementInstance previousStatement = null;
@@ -118,7 +119,7 @@ public class DynamicControlFlowGraph extends Graph{
             Map<String, Pair<SootMethod, Unit>> threadStartersInThisMethod = new HashMap<>();
             PatchingChain<Unit> units = body.getUnits();
 
-            Map <String, Unit> unitString;
+            Map <String, List<Unit>> unitString;
             if (unitStringsCache.containsKey(mt)) {
                 unitString = unitStringsCache.get(mt);
             } else {
@@ -187,7 +188,7 @@ public class DynamicControlFlowGraph extends Graph{
         traceList.add(statementInstance);
     }
 
-    private StatementInstance createStatementInstance(SootMethod mt, Map<String, Unit> unitString,
+    private StatementInstance createStatementInstance(SootMethod mt, Map<String, List<Unit>> unitString,
             Map<String, Pair<SootMethod, Unit>> settersInThisMethod,
             Map<String, Pair<SootMethod, Unit>> threadStartersInThisMethod, TraceStatement traceStatement, int lineNumber) {
         StatementInstance createdStatement = null;
@@ -201,7 +202,7 @@ public class DynamicControlFlowGraph extends Graph{
         return createdStatement;
     }
 
-    private StatementInstance matchStatementInstanceToClosestTraceLine(SootMethod mt, Map<String, Unit> unitString, 
+    private StatementInstance matchStatementInstanceToClosestTraceLine(SootMethod mt, Map<String, List<Unit>> unitString, 
                     TraceStatement traceStatement, int lineNumber) {
 
         int leastDistance = Integer.MAX_VALUE;
@@ -222,7 +223,13 @@ public class DynamicControlFlowGraph extends Graph{
                     distance = threshold;
                 }
                 if (distance < leastDistance) {
-                    closestUnit = unitString.get(us);
+                    List<Unit> units = unitString.get(us);
+                    if (units.size() == 1) {
+                        closestUnit = units.get(0);
+                    } else {
+                        int idx = getClosestUnitByLineNumber(units, prevLine);
+                        closestUnit = units.get(idx);
+                    }
                     leastDistance = distance;
                 }
             }
@@ -237,14 +244,22 @@ public class DynamicControlFlowGraph extends Graph{
         return createdStatement;
     }
 
-    private StatementInstance matchStatementInstanceToTraceLine(SootMethod mt, Map<String, Unit> unitString,
+    private StatementInstance matchStatementInstanceToTraceLine(SootMethod mt, Map<String, List<Unit>> unitString,
             Map<String, Pair<SootMethod, Unit>> settersInThisMethod,
             Map<String, Pair<SootMethod, Unit>> threadStartersInThisMethod, TraceStatement traceStatement, int lineNumber) {
         StatementInstance createdStatement = null;
         String us = traceStatement.getInstruction();
-        Unit unit = unitString.get(us);
+        List<Unit> units = unitString.get(us);
         try {
+            Unit unit = null;
+            if (units.size() == 1) {
+                unit = units.get(0);
+            } else {
+                int idx = getClosestUnitByLineNumber(units, prevLine);
+                unit = units.get(idx);
+            }
             createdStatement = new StatementInstance(mt, unit, lineNumber, traceStatement.getThreadId(), traceStatement.getFieldAddr(), unit.getJavaSourceStartLineNumber(), mt.getDeclaringClass().getFilePath());
+            prevLine = createdStatement.getJavaSourceLineNo();
             addStatement(createdStatement);
             if (settersInThisMethod.containsKey(us)) {
                 setterLineMap.put(settersInThisMethod.get(us), lineNumber);
@@ -256,6 +271,19 @@ public class DynamicControlFlowGraph extends Graph{
             AnalysisLogger.error("Cannot create instruction {}", traceStatement);
         }
         return createdStatement;
+    }
+
+    public static int getClosestUnitByLineNumber(List<Unit> units, int prevLine) {
+        int distance = Math.abs(units.get(0).getJavaSourceStartLineNumber() - prevLine);
+        int idx = 0;
+        for(int c = 1; c < units.size(); c++){
+            int cdistance = Math.abs(units.get(c).getJavaSourceStartLineNumber() - prevLine);
+            if(cdistance < distance){
+                idx = c;
+                distance = cdistance;
+            }
+        }
+        return idx;
     }
 
     private void addRegisterationEdgesForThreads(SootMethod mt, int lineNumber) {
@@ -291,13 +319,15 @@ public class DynamicControlFlowGraph extends Graph{
     }
 
 
-    protected static Map<String, Unit> createUnitStrings(PatchingChain<Unit> units) {
-        Map<String, Unit> unitString = new LinkedHashMap<>();
+    protected static Map<String, List<Unit>> createUnitStrings(PatchingChain<Unit> units) {
+        Map<String, List<Unit>> unitString = new LinkedHashMap<>();
         for(Unit u: units) {
             if (u instanceof IdentityStmt) {
                 continue;
             }
-            unitString.put(u.toString(), u);
+            List<Unit> val = unitString.getOrDefault(u.toString(), new ArrayList<>());
+            val.add(u);
+            unitString.put(u.toString(), val);
         }
         return unitString;
     }

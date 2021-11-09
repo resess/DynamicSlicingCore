@@ -281,7 +281,9 @@ public class DynamicSlice
         Set<String> sliceLines = new HashSet<>();
         for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: this) {
             StatementInstance destinationNode = entry.getO1().getO1();
-            sliceLines.add(destinationNode.getJavaSourceFile() + ":" + destinationNode.getJavaSourceLineNo());
+            if (destinationNode.getJavaSourceLineNo() != -1) {
+                sliceLines.add(destinationNode.getJavaSourceFile() + ":" + destinationNode.getJavaSourceLineNo());
+            }
         }
         return sliceLines;
     }
