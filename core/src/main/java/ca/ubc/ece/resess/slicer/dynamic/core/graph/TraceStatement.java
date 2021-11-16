@@ -19,19 +19,19 @@ public class TraceStatement implements Serializable {
     }
 
     public void setStatement(Statement statement) {
-      this.statement = statement;
+        this.statement = statement;
     }
 
     public void setFieldAddr(Long fieldAddr) {
-      this.fieldAddr = fieldAddr;
+        this.fieldAddr = fieldAddr;
     }
 
     public void setThreadId(Long threadId) {
-      this.threadId = threadId;
+        this.threadId = threadId;
     }
 
     public Statement getStatement() {
-      return statement;
+        return statement;
     }
 
     public Long getLineNumber() {
@@ -47,11 +47,11 @@ public class TraceStatement implements Serializable {
     }
 
     public Long getFieldAddr() {
-      return fieldAddr;
+        return fieldAddr;
     }
 
     public Long getThreadId() {
-      return threadId;
+        return threadId;
     }
 }
 

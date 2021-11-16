@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import soot.SootMethod;
-import soot.Type;
-import soot.toolkits.scalar.Pair;
+import ca.ubc.ece.resess.slicer.dynamic.core.exceptions.EmptyAccessPathException;
 import ca.ubc.ece.resess.slicer.dynamic.core.exceptions.NullTypeException;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
-import ca.ubc.ece.resess.slicer.dynamic.core.exceptions.EmptyAccessPathException;
+import soot.SootMethod;
+import soot.Type;
+import soot.toolkits.scalar.Pair;
 
 
 public class AccessPath {
@@ -27,8 +27,8 @@ public class AccessPath {
     private static final String TERMINATOR = "*";
     public static final int NOT_DEFINED = -1;
     public static final int NOT_USED = -1;
-    
-    public AccessPath(int usedAt, int definedAt, StatementInstance si){
+
+    public AccessPath(int usedAt, int definedAt, StatementInstance si) {
         setPath(new ArrayList<>());
         setClassPath(new ArrayList<>());
         setUsedLine(usedAt);
@@ -36,9 +36,9 @@ public class AccessPath {
         setStatementInstance(si);
     }
 
-    public AccessPath(AccessPath other, StatementInstance si){
+    public AccessPath(AccessPath other, StatementInstance si) {
         setPath(other.getPath());
-        if(other.isStaticField) {
+        if (other.isStaticField) {
             setStaticField();
         }
         setClassPath(other.getClassPath());
@@ -47,9 +47,9 @@ public class AccessPath {
         setStatementInstance(si);
     }
 
-    public AccessPath(AccessPath other, int usedAt, int definedAt, StatementInstance si){
+    public AccessPath(AccessPath other, int usedAt, int definedAt, StatementInstance si) {
         setPath(other.getPath());
-        if(other.isStaticField) {
+        if (other.isStaticField) {
             setStaticField();
         }
         setClassPath(other.getClassPath());
@@ -58,12 +58,12 @@ public class AccessPath {
         setStatementInstance(si);
     }
 
-    public AccessPath(String path, Type type, int usedAt, int definedAt, StatementInstance si){
+    public AccessPath(String path, Type type, int usedAt, int definedAt, StatementInstance si) {
         setPath(path);
         setUsedLine(usedAt);
         setDefinedLine(definedAt);
         this.classPath.add(type);
-        if (type == null){
+        if (type == null) {
             throw new NullTypeException();
         }
         setStatementInstance(si);
@@ -128,8 +128,8 @@ public class AccessPath {
         return path;
     }
 
-    public String getPathString(){
-        return String.join(".", this.path) + (this.clipped? ("."+TERMINATOR):(""));
+    public String getPathString() {
+        return String.join(".", this.path) + (this.clipped ? ("." + TERMINATOR) : (""));
     }
 
     public List<Type> getClassPath() {
@@ -141,11 +141,12 @@ public class AccessPath {
     }
 
     public boolean startsWith(String base) {
-        base = base.startsWith("$")? base.substring(1) : base;
+        base = base.startsWith("$") ? base.substring(1) : base;
         ArrayList<String> baseArray = new ArrayList<>();
         baseArray.add(base);
         return startsWith(baseArray);
     }
+
     public boolean startsWith(List<String> baseArray) {
         if (baseArray.isEmpty() && !(this.path.isEmpty())) {
             return false;
@@ -153,11 +154,11 @@ public class AccessPath {
         if (baseArray.size() > this.path.size()) {
             return false;
         }
-        for (int i = 0; i< baseArray.size(); i++) {
+        for (int i = 0; i < baseArray.size(); i++) {
             String thisBase = this.path.get(i);
-            thisBase = thisBase.startsWith("$")? thisBase.substring(1) : thisBase;
+            thisBase = thisBase.startsWith("$") ? thisBase.substring(1) : thisBase;
             String otherBase = baseArray.get(i);
-            otherBase = otherBase.startsWith("$")? otherBase.substring(1) : otherBase;
+            otherBase = otherBase.startsWith("$") ? otherBase.substring(1) : otherBase;
             if (!thisBase.equals(otherBase)) {
                 return false;
             }
@@ -174,8 +175,7 @@ public class AccessPath {
     }
 
 
-
-    public boolean hasCommonPrefix(AccessPath other){
+    public boolean hasCommonPrefix(AccessPath other) {
         if (other == null) {
             return false;
         }
@@ -190,14 +190,14 @@ public class AccessPath {
         if (this.isEmpty() || base.isEmpty()) {
             return false;
         }
-        if (this.path.size() > base.path.size()-1) {
+        if (this.path.size() > base.path.size() - 1) {
             return false;
         }
-        for (int i = 0; i< this.path.size(); i++) {
+        for (int i = 0; i < this.path.size(); i++) {
             String thisBase = this.path.get(i);
-            thisBase = thisBase.startsWith("$")? thisBase.substring(1) : thisBase;
+            thisBase = thisBase.startsWith("$") ? thisBase.substring(1) : thisBase;
             String otherBase = base.path.get(i);
-            otherBase = otherBase.startsWith("$")? otherBase.substring(1) : otherBase;
+            otherBase = otherBase.startsWith("$") ? otherBase.substring(1) : otherBase;
             if (!thisBase.equals(otherBase)) {
                 return false;
             }
@@ -205,7 +205,7 @@ public class AccessPath {
         return true;
     }
 
-    public AccessPath add(String p, Type type, StatementInstance si){
+    public AccessPath add(String p, Type type, StatementInstance si) {
         if (this.path.isEmpty()) {
             throw new EmptyAccessPathException();
         }
@@ -222,7 +222,7 @@ public class AccessPath {
         return add(other.getO1(), other.getO2(), si);
     }
 
-    public AccessPath add(List<String> p, List<Type> types, StatementInstance si){
+    public AccessPath add(List<String> p, List<Type> types, StatementInstance si) {
         if (this.path.isEmpty()) {
             throw new EmptyAccessPathException();
         }
@@ -243,11 +243,11 @@ public class AccessPath {
         }
     }
 
-    public Pair<String, Type> getBase(){
+    public Pair<String, Type> getBase() {
         return new Pair<>(path.get(0), classPath.get(0));
     }
 
-    public List<String> getFields(){
+    public List<String> getFields() {
         ArrayList<String> fields = new ArrayList<>();
         try {
             fields = new ArrayList<>(path.subList(1, path.size()));
@@ -256,29 +256,30 @@ public class AccessPath {
         }
         return fields;
     }
-    public List<Type> getFieldsTypes(){
+
+    public List<Type> getFieldsTypes() {
         return new ArrayList<>(this.classPath.subList(1, this.classPath.size()));
 
     }
 
-    public String getField(){
+    public String getField() {
         if (this.path.size() > 1) {
-            return this.path.get(this.path.size()-1);
+            return this.path.get(this.path.size() - 1);
         } else {
             return "";
         }
     }
 
-    public String getFieldSubSignature(){
+    public String getFieldSubSignature() {
         if (this.path.size() > 1) {
-            return this.classPath.get(this.classPath.size()-1) + " " + this.path.get(this.path.size()-1);
+            return this.classPath.get(this.classPath.size() - 1) + " " + this.path.get(this.path.size() - 1);
         } else {
             return "";
         }
     }
 
 
-    public Pair<ArrayList<String>, ArrayList<Type>> getAfter(AccessPath other){
+    public Pair<ArrayList<String>, ArrayList<Type>> getAfter(AccessPath other) {
         return getAfter(other.getPath());
     }
 
@@ -286,7 +287,7 @@ public class AccessPath {
         return !getAfter(other).getO1().isEmpty();
     }
 
-    public Pair<ArrayList<String>, ArrayList<Type>> getAfter(List<String> base){
+    public Pair<ArrayList<String>, ArrayList<Type>> getAfter(List<String> base) {
         Pair<ArrayList<String>, ArrayList<Type>> ret = new Pair<>();
         ret.setO1(new ArrayList<>());
         ret.setO2(new ArrayList<>());
@@ -308,20 +309,20 @@ public class AccessPath {
             return false;
         }
         AccessPath other = (AccessPath) o;
-        
+
         return path.equals(other.path) &&
-               classPath.equals(other.classPath) && 
-               (usedAt == other.usedAt) &&
-               (definedAt == other.definedAt);
+                classPath.equals(other.classPath) &&
+                (usedAt == other.usedAt) &&
+                (definedAt == other.definedAt);
     }
 
     public boolean pathEquals(AccessPath other) {
         return this.path.equals(other.path);
     }
 
-    public boolean baseEquals(String otherBase){
-        String thisBase = getBase().getO1().startsWith("$")? getBase().getO1().substring(1): getBase().getO1();
-        otherBase = otherBase.startsWith("$")? otherBase.substring(1): otherBase;
+    public boolean baseEquals(String otherBase) {
+        String thisBase = getBase().getO1().startsWith("$") ? getBase().getO1().substring(1) : getBase().getO1();
+        otherBase = otherBase.startsWith("$") ? otherBase.substring(1) : otherBase;
         return thisBase.equals(otherBase);
     }
 
@@ -340,7 +341,7 @@ public class AccessPath {
         return "(" + getPathString() + ":" + getUsedLine() + ":" + getDefinedLine() + ")";
     }
 
-    public boolean isEmpty(){
+    public boolean isEmpty() {
         return path.isEmpty();
     }
 
@@ -375,7 +376,7 @@ public class AccessPath {
             return true;
         }
         SootMethod method = si.getMethod();
-        int maxParamIndex = method.getParameterCount() + (method.isStatic()? 0:1);
+        int maxParamIndex = method.getParameterCount() + (method.isStatic() ? 0 : 1);
         Matcher matcher = Pattern.compile("\\d+").matcher(this.getBase().getO1());
         matcher.find();
         int variableIndex = Integer.parseInt(matcher.group());

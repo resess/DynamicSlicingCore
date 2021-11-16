@@ -1,32 +1,31 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.controldependence;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-
-import ca.ubc.ece.resess.slicer.dynamic.core.graph.DynamicControlFlowGraph;
-import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
-import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
-import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
-import soot.toolkits.graph.pdg.EnhancedUnitGraph;
-import soot.toolkits.graph.pdg.Region;
-import soot.toolkits.graph.pdg.RegionAnalysis;
-import soot.SootMethod;
-import soot.Unit;
-import soot.jimple.GotoStmt;
-
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.DynamicControlFlowGraph;
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
+import soot.SootMethod;
+import soot.Unit;
+import soot.jimple.GotoStmt;
+import soot.toolkits.graph.pdg.EnhancedUnitGraph;
+import soot.toolkits.graph.pdg.Region;
+import soot.toolkits.graph.pdg.RegionAnalysis;
 
 
-public class ControlDominator{
+public class ControlDominator {
 
-    static Set<SootMethod> outOfMemMethods = new LinkedHashSet<>();
-    static Map<SootMethod, EnhancedUnitGraph> computedGraphs = new LinkedHashMap<>();
+    static final Set<SootMethod> outOfMemMethods = new LinkedHashSet<>();
+    static final Map<SootMethod, EnhancedUnitGraph> computedGraphs = new LinkedHashMap<>();
+
     private ControlDominator() {
         throw new IllegalStateException("Utility class");
     }
@@ -34,10 +33,10 @@ public class ControlDominator{
     static int getIntFromString(String s) {
         Matcher matcher = Pattern.compile("\\d+").matcher(s);
         matcher.find();
-        return Integer.valueOf(matcher.group());
+        return Integer.parseInt(matcher.group());
     }
 
-    public static StatementInstance getControlDominator(StatementInstance stmt, StatementMap chunk, DynamicControlFlowGraph dcfg){
+    public static StatementInstance getControlDominator(StatementInstance stmt, StatementMap chunk, DynamicControlFlowGraph dcfg) {
         if (outOfMemMethods.contains(stmt.getMethod())) {
             return null;
         }
@@ -45,7 +44,7 @@ public class ControlDominator{
         Thread t = new Thread(cdr);
         try {
             t.start();
-            t.join(30*1000);
+            t.join(30 * 1000);
             t.interrupt();
         } catch (InterruptedException e) {
             // pass
@@ -60,11 +59,12 @@ public class ControlDominator{
         private final DynamicControlFlowGraph dcfg;
         private StatementInstance candidateIu;
 
-        ControlDomRunner (StatementInstance stmt, StatementMap chunk, DynamicControlFlowGraph dcfg){
+        ControlDomRunner(StatementInstance stmt, StatementMap chunk, DynamicControlFlowGraph dcfg) {
             this.stmt = stmt;
             this.chunk = chunk;
             this.dcfg = dcfg;
         }
+
         @Override
         public void run() {
             this.candidateIu = getControlDom(stmt, chunk, dcfg);
@@ -86,11 +86,11 @@ public class ControlDominator{
                 cug = new EnhancedUnitGraph(stmt.getMethod().getActiveBody());
                 computedGraphs.put(stmt.getMethod(), cug);
             }
-            
+
             // AnalysisLogger.warn(true, "Graph: {}", cug);
             // HashMutablePDG pdg = new HashMutablePDG(new ExceptionalUnitGraph(stmt.getMethod().getActiveBody()));
             RegionAnalysis ra = new RegionAnalysis(cug, stmt.getMethod(), stmt.getMethod().getDeclaringClass());
-            for(Region r: ra.getRegions()) {
+            for (Region r : ra.getRegions()) {
                 List<Unit> regionUnits = r.getUnits();
                 if (regionUnits.contains(stmt.getUnit())) {
                     if (regionUnits.toString().contains(":= @caughtexception") || regionUnits.toString().contains("goto [?= throw")) {
@@ -121,7 +121,7 @@ public class ControlDominator{
     }
 
     private static StatementInstance compareUnits(StatementInstance stmt, StatementMap chunk, Unit unit) {
-        for (StatementInstance iu: chunk.values()) {
+        for (StatementInstance iu : chunk.values()) {
             if (iu.getLineNo() > stmt.getLineNo()) {
                 continue;
             }
@@ -136,7 +136,7 @@ public class ControlDominator{
     private static StatementInstance lineBeforeException(DynamicControlFlowGraph icdg, List<Unit> regionUnits, StatementInstance statementInstance) {
         StatementInstance prev = null;
         Set<Unit> mustFind = new HashSet<>();
-        for (Unit u: regionUnits) {
+        for (Unit u : regionUnits) {
             if (u.equals(statementInstance.getUnit())) {
                 break;
             }
@@ -148,14 +148,12 @@ public class ControlDominator{
         while (newPos > 0) {
             newPos--;
             prev = icdg.mapNoUnits(newPos);
-            if ((prev!=null) && !((prev.getUnit()) instanceof GotoStmt)) {
+            if ((prev != null) && !((prev.getUnit()) instanceof GotoStmt)) {
                 if (mustFind.isEmpty()) {
                     return prev;
-                } else if (mustFind.contains(prev.getUnit())) {
-                    mustFind.remove(prev.getUnit());
-                }
+                } else mustFind.remove(prev.getUnit());
             }
-            
+
         }
         return prev;
     }

@@ -2,7 +2,6 @@ package ca.ubc.ece.resess.slicer.dynamic.core.utils;
 
 import java.util.List;
 
-
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
@@ -23,23 +22,20 @@ public class AnalysisUtils {
     }
 
     public static boolean isInteger(String s) {
-        try { 
+        try {
             Integer.parseInt(s);
-        } catch(NumberFormatException | NullPointerException e) {
+        } catch (NumberFormatException | NullPointerException e) {
             return false;
         }
         return true;
     }
 
-    public static boolean isPrimitiveType(Value v){
+    public static boolean isPrimitiveType(Value v) {
         Type t = v.getType();
         if (v.getType() instanceof ArrayType) {
             t = ((ArrayType) v.getType()).getArrayElementType();
         }
-        if (t instanceof PrimType) {
-            return true;
-        }
-        return false;
+        return t instanceof PrimType;
     }
 
     public static boolean noCommons(List<String> p1, List<String> p2, List<Type> t1, List<Type> t2) {
@@ -56,7 +52,7 @@ public class AnalysisUtils {
     }
 
     public static boolean matchingType(AliasSet taintSet, StatementInstance caller) {
-        for (AccessPath accessPath: taintSet) {
+        for (AccessPath accessPath : taintSet) {
             Type t = caller.getMethod().getDeclaringClass().getType();
             int index = accessPath.classIndex(t);
             if (index != -1) {
@@ -77,7 +73,7 @@ public class AnalysisUtils {
                 callerExp = ((IfStmt) caller.getUnit()).getTarget().getInvokeExpr();
             } else if (caller.getUnit() instanceof Stmt) {
                 callerExp = ((Stmt) caller.getUnit()).getInvokeExpr();
-            } 
+            }
         } catch (Exception e) {
             return null;
         }
@@ -98,14 +94,11 @@ public class AnalysisUtils {
     }
 
     public static boolean isAndroidMethod(StatementInstance stmt, AccessPath var) {
-        if (stmt.getMethod().getDeclaringClass().getName().startsWith(Constants.ANDROID_LIBS) || var.getField().equals("mContext")) {
-            return true;
-        }
-        return false;
+        return stmt.getMethod().getDeclaringClass().getName().startsWith(Constants.ANDROID_LIBS) || var.getField().equals("mContext");
     }
-    
+
     public static boolean isMethodParameter(StatementInstance si, AccessPath ap) {
-        for (Unit uu: si.getMethod().getActiveBody().getUnits()) {
+        for (Unit uu : si.getMethod().getActiveBody().getUnits()) {
             if (uu instanceof IdentityStmt) {
                 if (uu.toString().contains("@this") || uu.toString().contains("@parameter")) {
                     String base = uu.getDefBoxes().get(0).getValue().toString();

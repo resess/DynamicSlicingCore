@@ -1,7 +1,7 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.utils;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,48 +9,48 @@ import org.slf4j.LoggerFactory;
 public class AnalysisLogger {
 
     static Integer sampleDump = 0;
-    static Map<String, Integer> executionSamples = new HashMap<>();
+    static final Map<String, Integer> executionSamples = new HashMap<>();
 
 
     private AnalysisLogger() {
         throw new IllegalStateException("Utility class");
     }
 
-    public static void log(boolean flag, String msg, Object ... args) {
+    public static void log(boolean flag, String msg, Object... args) {
         if (flag) {
             StackTraceElement[] stacktrace = Thread.currentThread().getStackTrace();
             StackTraceElement e = stacktrace[2];
             String methodName = e.getMethodName();
             String className = e.getClassName();
-            String [] classNameArr = className.split("\\.");
-            className = classNameArr[classNameArr.length-1];
+            String[] classNameArr = className.split("\\.");
+            className = classNameArr[classNameArr.length - 1];
             Logger logger = LoggerFactory.getLogger(className);
-            logger.info(methodName + " (" + e.getLineNumber() + "): " +  msg, args);
+            logger.info(methodName + " (" + e.getLineNumber() + "): " + msg, args);
         }
     }
 
-    public static void warn(boolean flag, String msg, Object ... args) {
+    public static void warn(boolean flag, String msg, Object... args) {
         if (flag) {
             StackTraceElement[] stacktrace = Thread.currentThread().getStackTrace();
             StackTraceElement e = stacktrace[2];
             String methodName = e.getMethodName();
             String className = e.getClassName();
-            String [] classNameArr = className.split("\\.");
-            className = classNameArr[classNameArr.length-1];
+            String[] classNameArr = className.split("\\.");
+            className = classNameArr[classNameArr.length - 1];
             Logger logger = LoggerFactory.getLogger(className);
-            logger.warn(methodName + " (" + String.valueOf(e.getLineNumber()) + "): " +  msg, args);
+            logger.warn(methodName + " (" + e.getLineNumber() + "): " + msg, args);
         }
     }
 
-    public static void error(String msg, Object ... args) {
+    public static void error(String msg, Object... args) {
         StackTraceElement[] stacktrace = Thread.currentThread().getStackTrace();
         StackTraceElement e = stacktrace[2];
         String methodName = e.getMethodName();
         String className = e.getClassName();
-        String [] classNameArr = className.split("\\.");
-        className = classNameArr[classNameArr.length-1];
+        String[] classNameArr = className.split("\\.");
+        className = classNameArr[classNameArr.length - 1];
         Logger logger = LoggerFactory.getLogger(className);
-        logger.error(methodName + " (" + e.getLineNumber() + "): " +  msg, args);
+        logger.error(methodName + " (" + e.getLineNumber() + "): " + msg, args);
         throw new Error("Logger error called");
     }
 
@@ -63,7 +63,7 @@ public class AnalysisLogger {
         if (samples == null) {
             samples = 0;
         }
-        executionSamples.put(location, samples+1);
+        executionSamples.put(location, samples + 1);
         sampleDump++;
         if (sampleDump == 1000000) {
             AnalysisLogger.log(true, "Sample dump:\n{}", getExecutionSamples());
@@ -73,7 +73,7 @@ public class AnalysisLogger {
 
     public static String getExecutionSamples() {
         StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, Integer> sample: executionSamples.entrySet()) {
+        for (Map.Entry<String, Integer> sample : executionSamples.entrySet()) {
             sb.append(sample.getKey());
             sb.append(": ");
             sb.append(sample.getValue());

@@ -1,40 +1,37 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.graph;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Base64;
-import java.io.OutputStream;
-import java.io.ByteArrayOutputStream;
 import java.util.zip.InflaterOutputStream;
 
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Rule;
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Symbol;
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Terminal;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.Statement;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
-
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Symbol;
-
 
 public class Parser {
 
-    private static final String DELEMITER = ":ZZZ:";
+    private static final String DELIMITER = ":ZZZ:";
 
 
     private Parser() {
         throw new IllegalStateException("Utility class");
-      }
+    }
 
     public static Trace readFile(String fileName, String staticLogFile) {
         return expandTrace(staticLogFile, fileName);
@@ -64,31 +61,31 @@ public class Parser {
                         continue;
                     }
                     lastSlicingLine = t;
-                } catch (ArrayIndexOutOfBoundsException e){
+                } catch (ArrayIndexOutOfBoundsException e) {
                     continue;
                 }
                 if (t.startsWith(" ZLIB: ")) {
                     t = decompress(t.split(" ZLIB: ")[1]);
                 }
-                List<String> chunk = Arrays.asList(t.split("-"));
+                String[] chunk = t.split("-");
                 // AnalysisLogger.log(true, "Chunk before {}", chunk);
                 // AnalysisLogger.log(true, "Len before {}", chunk.size());
-                // chunk = compressTrace(chunk); // TODO: buggy, need fixing and speeding up before intergartion
+                // chunk = compressTrace(chunk); // TODO: buggy, need fixing and speeding up before integration
                 // AnalysisLogger.log(true, "Chunk after {}", chunk);
                 // AnalysisLogger.log(true, "Len after {}", chunk.size());
-                for (String s: chunk) {
+                for (String s : chunk) {
                     int fieldId = -1;
-                    long lineNum = -1L;
-                    long threadNum = -1L;
-                    String [] sSplit = s.split(":");
+                    long lineNum;
+                    long threadNum;
+                    String[] sSplit = s.split(":");
                     try {
-                        lineNum = Long.valueOf(sSplit[0]);
+                        lineNum = Long.parseLong(sSplit[0]);
                     } catch (java.lang.NumberFormatException e) {
                         continue;
                     }
-                    threadNum = Long.valueOf(sSplit[1]);
+                    threadNum = Long.parseLong(sSplit[1]);
                     try {
-                        fieldId = Integer.valueOf(sSplit[2]);
+                        fieldId = Integer.parseInt(sSplit[2]);
                     } catch (ArrayIndexOutOfBoundsException e) {
                         // Ignored
                     }
@@ -104,25 +101,21 @@ public class Parser {
     }
 
     private static boolean checkIsField(String[] sSplit) {
-        boolean isField = false;
-        if (sSplit.length > 1 && sSplit[1].equals("FIELD")) {
-            isField = true;
-        } else {
-            isField = false;
-        }
+        boolean isField;
+        isField = sSplit.length > 1 && sSplit[1].equals("FIELD");
         return isField;
     }
 
     protected static void buildLogMap(JSONObject jObj, Map<Long, List<String>> logMap) {
-        for (Object o :jObj.keySet()) {
+        for (Object o : jObj.keySet()) {
             String methodName = (String) o;
             JSONObject methodBody = (JSONObject) jObj.get(o);
-            for (Object bb :methodBody.keySet()) {
+            for (Object bb : methodBody.keySet()) {
                 Long lineNum = Long.valueOf((String) bb);
                 Object[] linesInBB = ((JSONArray) methodBody.get(bb)).toArray();
                 ArrayList<String> expandedBody = new ArrayList<>();
-                for (Object line: linesInBB) {
-                    String payload = lineNum + DELEMITER + methodName + DELEMITER + ((String) line);
+                for (Object line : linesInBB) {
+                    String payload = lineNum + DELIMITER + methodName + DELIMITER + line;
                     expandedBody.add(payload);
                 }
                 logMap.put(lineNum, expandedBody);
@@ -131,20 +124,20 @@ public class Parser {
     }
 
     protected static void addToExpandedTrace(Trace listTraces, Map<Long, List<String>> logMap, long lineNum,
-            long threadNum, int fieldId) {
+                                             long threadNum, int fieldId) {
         try {
             for (String line : logMap.get(lineNum)) {
-                line = line + DELEMITER + threadNum + DELEMITER + fieldId;
-                String [] tokens = line.split(DELEMITER);
+                line = line + DELIMITER + threadNum + DELIMITER + fieldId;
+                String[] tokens = line.split(DELIMITER);
                 TraceStatement tr = new TraceStatement();
-                if(tokens.length < 4) continue;
-                long lineNumber = Long.valueOf(tokens[0]);
+                if (tokens.length < 4) continue;
+                long lineNumber = Long.parseLong(tokens[0]);
                 String method = tokens[1];
                 String instruction = tokens[2];
                 Statement statement = Statement.getStatement(lineNumber, method, instruction);
                 tr.setStatement(statement);
                 tr.setThreadId(Long.valueOf(tokens[3]));
-                if(tokens.length > 4) {
+                if (tokens.length > 4) {
                     tr.setFieldAddr(Long.valueOf(tokens[4]));
                 }
                 listTraces.add(tr);
@@ -165,8 +158,7 @@ public class Parser {
         } catch (Exception e) {
             AnalysisLogger.warn(true, "Cannot decompress line {}", compressed64);
         }
-        byte[] decompressedBArray = os.toByteArray();
-        return new String(decompressedBArray);
+        return os.toString();
     }
 
     private static List<String> compressTrace(List<String> splitLines) {
@@ -176,18 +168,18 @@ public class Parser {
         Rule.numRules = 0;
         Map<Symbol, Symbol> diagramTable = new HashMap<>();
         Map<String, String> symbolMap = new HashMap<>();
-        for (i = 0; i < splitLines.size(); i++){
-          String val = splitLines.get(i).replace(":", "0");
-          symbolMap.put(val, splitLines.get(i));
-          firstRule.last().insertAfter(new Terminal(Long.valueOf(val)), diagramTable);
-          firstRule.last().getP().check(diagramTable);
+        for (i = 0; i < splitLines.size(); i++) {
+            String val = splitLines.get(i).replace(":", "0");
+            symbolMap.put(val, splitLines.get(i));
+            firstRule.last().insertAfter(new Terminal(Long.parseLong(val)), diagramTable);
+            firstRule.last().getP().check(diagramTable);
         }
         AnalysisLogger.log(true, "Rules: {}", firstRule.getRules());
         List<String> compressedString = new ArrayList<>();
-        for (String uncompressed: firstRule.getRules().get("R0")) {
+        for (String uncompressed : firstRule.getRules().get("R0")) {
             String lastStr = "";
             if (!compressedString.isEmpty()) {
-                lastStr = compressedString.get(compressedString.size()-1);
+                lastStr = compressedString.get(compressedString.size() - 1);
             }
             if (!lastStr.equals(uncompressed)) {
                 compressedString.add(uncompressed);
@@ -197,18 +189,18 @@ public class Parser {
         // AnalysisLogger.log(true, "Compressed: {}", compressedString);
 
         List<String> resultStr = expand(firstRule, symbolMap, compressedString);
-        
-        
+
+
         // AnalysisLogger.log(true, "Expanded compressed: {}", resultStr);
         return resultStr;
     }
 
     private static List<String> expand(Rule firstRule, Map<String, String> symbolMap, List<String> compressedString) {
         List<String> resultStr = new ArrayList<>();
-        for (String compressed: compressedString) {
+        for (String compressed : compressedString) {
             if (compressed.startsWith("R") && firstRule.getRules().containsKey(compressed)) {
                 List<String> expandedList = firstRule.getRules().get(compressed);
-                for (String str: expandedList) {
+                for (String str : expandedList) {
                     if (str.startsWith("R")) {
                         resultStr.addAll(expand(firstRule, symbolMap, firstRule.getRules().get(str)));
                     } else {

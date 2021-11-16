@@ -10,14 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import soot.Value;
-import soot.jimple.AssignStmt;
-import soot.jimple.Constant;
-import soot.jimple.IfStmt;
-import soot.jimple.InvokeExpr;
-import soot.jimple.InstanceInvokeExpr;
-import org.json.XML;
-
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.framework.FrameworkAssignment.VariableType;
@@ -25,12 +17,17 @@ import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
-
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
+import org.json.XML;
+import soot.Value;
+import soot.jimple.AssignStmt;
+import soot.jimple.Constant;
+import soot.jimple.IfStmt;
+import soot.jimple.InstanceInvokeExpr;
+import soot.jimple.InvokeExpr;
 
 
 public class FrameworkModel {
@@ -44,13 +41,13 @@ public class FrameworkModel {
     static String stubDroidPath;
     static String extraPath;
     static String taintWrapperPath;
-    static Map<String, Set<FrameworkAssignment>> stubDroidModel = new HashMap<>();
-    static Map<String, Set<FrameworkAssignment>> taintWrapperModel = new HashMap<>();
-    static Map<String, String> taintWrapperType = new HashMap<>();
+    static final Map<String, Set<FrameworkAssignment>> stubDroidModel = new HashMap<>();
+    static final Map<String, Set<FrameworkAssignment>> taintWrapperModel = new HashMap<>();
+    static final Map<String, String> taintWrapperType = new HashMap<>();
 
-    public static void readTaintWrapperFile(){
+    public static void readTaintWrapperFile() {
         try (BufferedReader br = new BufferedReader(new FileReader(FrameworkModel.taintWrapperPath))) {
-            String line = "";
+            String line;
             while ((line = br.readLine()) != null) {
                 if (!line.isEmpty() && !line.startsWith("%") && !line.startsWith("^")) {
                     if (line.startsWith("~")) {
@@ -67,10 +64,10 @@ public class FrameworkModel {
         }
     }
 
-    private static Set<FrameworkAssignment> getIdentityAssignements(String methodSignature) {
+    private static Set<FrameworkAssignment> getIdentityAssignments(String methodSignature) {
         Set<FrameworkAssignment> model = new HashSet<>();
 
-        int numArgs = StringUtils.countMatches(methodSignature, ",")+1;
+        int numArgs = StringUtils.countMatches(methodSignature, ",") + 1;
         for (int i = 0; i < numArgs; i++) {
             FrameworkAssignment assignIdentity = new FrameworkAssignment(i, i);
             model.add(assignIdentity);
@@ -83,7 +80,7 @@ public class FrameworkModel {
         Set<FrameworkAssignment> model = new HashSet<>();
         FrameworkAssignment thisAssign = new FrameworkAssignment(Constants.THIS, Constants.THIS);
         model.add(thisAssign);
-        int numArgs = StringUtils.countMatches(methodSignature, ",")+1;
+        int numArgs = StringUtils.countMatches(methodSignature, ",") + 1;
         for (int i = 0; i < numArgs; i++) {
             FrameworkAssignment assignIdentity = new FrameworkAssignment(i, i);
             model.add(assignIdentity);
@@ -98,8 +95,8 @@ public class FrameworkModel {
         Set<FrameworkAssignment> model = new HashSet<>();
         FrameworkAssignment thisAssign = new FrameworkAssignment(Constants.THIS, Constants.CLEAR);
         model.add(thisAssign);
-        int numArgs = StringUtils.countMatches(methodSignature, ",")+1;
-        if (StringUtils.countMatches(methodSignature, "()")==1) {
+        int numArgs = StringUtils.countMatches(methodSignature, ",") + 1;
+        if (StringUtils.countMatches(methodSignature, "()") == 1) {
             numArgs = 0;
         }
         for (int i = 0; i < numArgs; i++) {
@@ -114,8 +111,8 @@ public class FrameworkModel {
 
     private static void addGenModel(String methodSignature) {
         Set<FrameworkAssignment> model = new HashSet<>();
-        int numArgs = StringUtils.countMatches(methodSignature, ",")+1;
-        if (StringUtils.countMatches(methodSignature, "()")==1) {
+        int numArgs = StringUtils.countMatches(methodSignature, ",") + 1;
+        if (StringUtils.countMatches(methodSignature, "()") == 1) {
             numArgs = 0;
         }
         for (int i = 0; i < numArgs; i++) {
@@ -134,19 +131,19 @@ public class FrameworkModel {
 
     private static void addDefaultModel(String methodSignature) {
         Set<FrameworkAssignment> model = new HashSet<>();
-        String[] splitted = methodSignature.split("\\s+");
-        int numArgs = StringUtils.countMatches(methodSignature, ",")+1;
-        if (StringUtils.countMatches(methodSignature, "()")==1) {
+        String[] split = methodSignature.split("\\s+");
+        int numArgs = StringUtils.countMatches(methodSignature, ",") + 1;
+        if (StringUtils.countMatches(methodSignature, "()") == 1) {
             numArgs = 0;
         }
-        if (splitted[1].equals("void")) {
+        if (split[1].equals("void")) {
             FrameworkAssignment assignThis = new FrameworkAssignment(Constants.THIS, Constants.THIS);
             model.add(assignThis);
         }
         for (int i = 0; i < numArgs; i++) {
             FrameworkAssignment assignReturn = new FrameworkAssignment(Constants.RETURN, i);
             model.add(assignReturn);
-            if (splitted[1].equals("void")) {
+            if (split[1].equals("void")) {
                 FrameworkAssignment assignThis = new FrameworkAssignment(Constants.THIS, i);
                 model.add(assignThis);
             }
@@ -178,7 +175,7 @@ public class FrameworkModel {
         readTaintWrapperFile();
     }
 
-    private static Set<FrameworkAssignment> convertMethod(InvokeExpr expr){
+    private static Set<FrameworkAssignment> convertMethod(InvokeExpr expr) {
         String methodSignature = expr.getMethod().getSignature();
         if (!stubDroidModel.containsKey(methodSignature)) {
             loadStubroidModel(expr, FrameworkModel.stubDroidPath);
@@ -205,11 +202,12 @@ public class FrameworkModel {
         String className = expr.getMethod().getDeclaringClass().getName();
         String fileName = path + File.separator + className + ".xml";
         try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            String line = "";
-            String xmlStr = "";
+            String line;
+            final StringBuilder xmlStrBuilder = new StringBuilder();
             while ((line = br.readLine()) != null) {
-                xmlStr += line;
+                xmlStrBuilder.append(line);
             }
+            String xmlStr = xmlStrBuilder.toString();
             JSONArray jsonArray = XML.toJSONObject(xmlStr).getJSONObject("summary").getJSONObject("methods").optJSONArray("method");
             if (jsonArray == null) {
                 jsonArray = new JSONArray();
@@ -218,10 +216,10 @@ public class FrameworkModel {
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject jsonObject = jsonArray.getJSONObject(i);
                 Set<FrameworkAssignment> model = new HashSet<>();
-                String modelId = "<"+className+ ": " + jsonObject.getString("id") +">";
+                String modelId = "<" + className + ": " + jsonObject.getString("id") + ">";
                 model.add(new FrameworkAssignment(Constants.THIS, Constants.THIS));
                 extractClearsOrFlowsFromStubDroidModel(jsonObject, model);
-                model.addAll(getIdentityAssignements(modelId));
+                model.addAll(getIdentityAssignments(modelId));
                 if (!model.isEmpty()) {
                     stubDroidModel.put(modelId, model);
                     taintWrapperType.put(modelId, "StubDroid");
@@ -267,7 +265,7 @@ public class FrameworkModel {
     }
 
 
-    private static FrameworkAssignment getClear(JSONObject clear){
+    private static FrameworkAssignment getClear(JSONObject clear) {
         String leftPath = "";
         Integer leftParam = Constants.RETURN;
         Integer rightParam = Constants.CLEAR;
@@ -276,7 +274,7 @@ public class FrameworkModel {
         if (leftType.equals("Field")) {
             leftParam = Constants.THIS;
         }
-        
+
         String dstAp = clear.optString(ACCESS_PATH);
         if (dstAp != null && !dstAp.isEmpty()) {
             leftPath = dstAp;
@@ -285,7 +283,7 @@ public class FrameworkModel {
         return new FrameworkAssignment(leftParam, rightParam, leftPath, "");
     }
 
-    private static FrameworkAssignment getFlow(JSONObject flow){
+    private static FrameworkAssignment getFlow(JSONObject flow) {
         String leftPath = "";
         String rightPath = "";
         Integer leftParam = Constants.RETURN;
@@ -300,7 +298,7 @@ public class FrameworkModel {
             rightPath = srcAp;
         }
 
-        
+
         try {
             leftParam = flow.getJSONObject("to").getInt("ParameterIndex");
         } catch (JSONException e) {
@@ -317,8 +315,8 @@ public class FrameworkModel {
         return new FrameworkAssignment(leftParam, rightParam, leftPath, rightPath);
     }
 
-    public static boolean localWrapper(StatementInstance si, AccessPath ap, StatementSet defSet, AliasSet usedVars){
-        boolean defintionFound = false;
+    public static boolean localWrapper(StatementInstance si, AccessPath ap, StatementSet defSet, AliasSet usedVars) {
+        boolean definitionFound = false;
         InvokeExpr invokeExpr = AnalysisUtils.getCallerExp(si);
         if (invokeExpr == null) {
             return false;
@@ -327,53 +325,53 @@ public class FrameworkModel {
             return false;
         }
         Set<FrameworkAssignment> model = convertMethod(invokeExpr);
-        for (FrameworkAssignment frameworkAssignment: model) {
+        for (FrameworkAssignment frameworkAssignment : model) {
             if (frameworkAssignment.leftType.equals(VariableType.PARAM)) {
-                defintionFound = localParamToParamFlow(si, ap, defSet, usedVars, defintionFound, invokeExpr, frameworkAssignment);
+                definitionFound = localParamToParamFlow(si, ap, defSet, usedVars, definitionFound, invokeExpr, frameworkAssignment);
             } else if (frameworkAssignment.leftType.equals(VariableType.RETURN)) {
-                defintionFound = localReturnToParamFlow(si, ap, defSet, usedVars, defintionFound, invokeExpr, frameworkAssignment);
+                definitionFound = localReturnToParamFlow(si, ap, defSet, usedVars, definitionFound, invokeExpr, frameworkAssignment);
             } else if (frameworkAssignment.leftType.equals(VariableType.INSTANCE) && !invokeExpr.getMethod().isStatic()) {
-                defintionFound = localReferenceToParamFlow(si, ap, defSet, usedVars, defintionFound, invokeExpr, frameworkAssignment);
+                definitionFound = localReferenceToParamFlow(si, ap, defSet, usedVars, definitionFound, invokeExpr, frameworkAssignment);
             }
         }
-        return defintionFound;
+        return definitionFound;
     }
 
     private static boolean localReferenceToParamFlow(StatementInstance si, AccessPath ap, StatementSet defSet, AliasSet usedVars,
-            boolean defintionFound, InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+                                                     boolean definitionFound, InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
         if (ap.baseEquals(((InstanceInvokeExpr) invokeExpr).getBase().toString())) {
             defSet.add(si);
             usedVars.add(frameworkAssignment.getRightAccessPath(invokeExpr, si.getLineNo(), si));
-            defintionFound = true;
+            definitionFound = true;
         }
-        return defintionFound;
+        return definitionFound;
     }
 
     private static boolean localReturnToParamFlow(StatementInstance si, AccessPath ap, StatementSet defSet, AliasSet usedVars,
-            boolean defintionFound, InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+                                                  boolean definitionFound, InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
         if ((si.getUnit() instanceof AssignStmt)) {
             if (ap.baseEquals(((AssignStmt) si.getUnit()).getLeftOp().toString())) {
                 defSet.add(si);
                 usedVars.add(frameworkAssignment.getRightAccessPath(invokeExpr, si.getLineNo(), si));
-                defintionFound = true;
+                definitionFound = true;
             }
         }
-        return defintionFound;
+        return definitionFound;
     }
 
     private static boolean localParamToParamFlow(StatementInstance si, AccessPath ap, StatementSet defSet, AliasSet usedVars,
-            boolean defintionFound, InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+                                                 boolean definitionFound, InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
         List<Value> args = invokeExpr.getArgs();
-        for(int argPos = 0; argPos < args.size(); argPos++) {
+        for (int argPos = 0; argPos < args.size(); argPos++) {
             if (frameworkAssignment.leftParam == argPos) {
                 if (ap.baseEquals(frameworkAssignment.getLeftParamAccessPath(invokeExpr, si.getLineNo(), si).getBase().getO1())) {
                     defSet.add(si);
                     usedVars.add(frameworkAssignment.getRightAccessPath(invokeExpr, si.getLineNo(), si));
-                    defintionFound = true;
+                    definitionFound = true;
                 }
             }
         }
-        return defintionFound;
+        return definitionFound;
     }
 
     public static void forwardWrapper(AliasSet taintSet, AliasSet newTaintSet, StatementInstance si, StatementSet aliasPath) {
@@ -385,7 +383,7 @@ public class FrameworkModel {
             return;
         }
         Set<FrameworkAssignment> model = convertMethod(invokeExpr);
-        for (FrameworkAssignment frameworkAssignment: model) {
+        for (FrameworkAssignment frameworkAssignment : model) {
             if (frameworkAssignment.rightType.equals(VariableType.INSTANCE)) {
                 forwardReferenceFlows(taintSet, newTaintSet, si, aliasPath, invokeExpr, frameworkAssignment);
             } else if (frameworkAssignment.rightType.equals(VariableType.PARAM)) {
@@ -397,9 +395,9 @@ public class FrameworkModel {
     }
 
     private static void forwardReferenceFlows(AliasSet taintSet, AliasSet newTaintSet, StatementInstance si, StatementSet aliasPath,
-            InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+                                              InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
         if (invokeExpr instanceof InstanceInvokeExpr) {
-            for (AccessPath ap: taintSet) {
+            for (AccessPath ap : taintSet) {
                 if (ap.startsWith(frameworkAssignment.getInstanceAccessPath(invokeExpr, si.getLineNo(), si))) {
                     if (frameworkAssignment.leftType.equals(VariableType.RETURN)) {
                         forwardReferenceToReturnFlow(newTaintSet, si, invokeExpr, frameworkAssignment, ap);
@@ -414,7 +412,7 @@ public class FrameworkModel {
     }
 
     private static void forwardClearFlows(AliasSet newTaintSet, StatementInstance si, InvokeExpr invokeExpr,
-            FrameworkAssignment frameworkAssignment) {
+                                          FrameworkAssignment frameworkAssignment) {
         if (frameworkAssignment.leftType.equals(VariableType.RETURN)) {
             forwardReturnClear(newTaintSet, si, frameworkAssignment);
         } else if (frameworkAssignment.leftType.equals(VariableType.INSTANCE) && !invokeExpr.getMethod().isStatic()) {
@@ -425,9 +423,9 @@ public class FrameworkModel {
     }
 
     private static void forwardParamFlows(AliasSet taintSet, AliasSet newTaintSet, StatementInstance si, StatementSet aliasPath,
-            InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+                                          InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
         List<Value> args = invokeExpr.getArgs();
-        for(int argPos = 0; argPos < args.size(); argPos++) {
+        for (int argPos = 0; argPos < args.size(); argPos++) {
             if (frameworkAssignment.rightParam == argPos) {
                 forwardArgFlows(taintSet, newTaintSet, si, aliasPath, invokeExpr, frameworkAssignment);
             }
@@ -435,8 +433,8 @@ public class FrameworkModel {
     }
 
     private static void forwardArgFlows(AliasSet taintSet, AliasSet newTaintSet, StatementInstance si, StatementSet aliasPath,
-            InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
-        for (AccessPath ap: taintSet) {
+                                        InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+        for (AccessPath ap : taintSet) {
             if (ap.startsWith(frameworkAssignment.getRightAccessPath(invokeExpr, si.getLineNo(), si))) {
                 if (frameworkAssignment.leftType.equals(VariableType.RETURN)) {
                     forwardParamToReturnFlow(newTaintSet, si, invokeExpr, frameworkAssignment, ap);
@@ -450,13 +448,13 @@ public class FrameworkModel {
     }
 
     private static void forwardParamClear(AliasSet newTaintSet, StatementInstance si, InvokeExpr invokeExpr,
-            FrameworkAssignment frameworkAssignment) {
+                                          FrameworkAssignment frameworkAssignment) {
         AccessPath leftAccessPath = frameworkAssignment.getLeftParamAccessPath(invokeExpr, si.getLineNo(), si);
         newTaintSet.remove(leftAccessPath);
     }
 
     private static void forwardReferenceClear(AliasSet newTaintSet, StatementInstance si, InvokeExpr invokeExpr,
-            FrameworkAssignment frameworkAssignment) {
+                                              FrameworkAssignment frameworkAssignment) {
         AccessPath instanceAp = frameworkAssignment.getInstanceAccessPath(invokeExpr, si.getLineNo(), si);
         newTaintSet.remove(instanceAp);
     }
@@ -469,7 +467,7 @@ public class FrameworkModel {
     }
 
     private static void forwardParamToParamFlow(AliasSet newTaintSet, StatementInstance si, StatementSet aliasPath,
-            InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment, AccessPath ap) {
+                                                InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment, AccessPath ap) {
         Value v = invokeExpr.getArg(frameworkAssignment.leftParam);
         if (!(v instanceof Constant) && !(AnalysisUtils.isPrimitiveType(v))) {
             AccessPath leftAccessPath = frameworkAssignment.getLeftParamAccessPath(invokeExpr, ap.getUsedLine(), si);
@@ -482,14 +480,14 @@ public class FrameworkModel {
     }
 
     private static void forwardParamToReferenceFlow(AliasSet newTaintSet, StatementInstance si, InvokeExpr invokeExpr,
-            FrameworkAssignment frameworkAssignment, AccessPath ap) {
+                                                    FrameworkAssignment frameworkAssignment, AccessPath ap) {
         AccessPath instanceAp = frameworkAssignment.getInstanceAccessPath(invokeExpr, ap.getUsedLine(), si);
         instanceAp.add(ap.getAfter(frameworkAssignment.getRightAccessPath(invokeExpr, ap.getUsedLine(), si)), si);
         newTaintSet.add(instanceAp);
     }
 
     private static void forwardParamToReturnFlow(AliasSet newTaintSet, StatementInstance si, InvokeExpr invokeExpr,
-            FrameworkAssignment frameworkAssignment, AccessPath ap) {
+                                                 FrameworkAssignment frameworkAssignment, AccessPath ap) {
         if ((si.getUnit() instanceof AssignStmt)) {
             Value v = ((AssignStmt) si.getUnit()).getLeftOp();
             if (!(v instanceof Constant) && !(AnalysisUtils.isPrimitiveType(v))) {
@@ -501,7 +499,7 @@ public class FrameworkModel {
     }
 
     private static void forwardReferenceToParamFlow(AliasSet newTaintSet, StatementInstance si, StatementSet aliasPath,
-            InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment, AccessPath ap) {
+                                                    InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment, AccessPath ap) {
         Value v = ((InstanceInvokeExpr) si.getUnit()).getArg(frameworkAssignment.leftParam);
         if (!(v instanceof Constant) && !(AnalysisUtils.isPrimitiveType(v))) {
             AccessPath leftAccessPath = frameworkAssignment.getLeftParamAccessPath(invokeExpr, ap.getUsedLine(), si);
@@ -513,7 +511,7 @@ public class FrameworkModel {
     }
 
     private static void forwardReferenceToReferenceFlow(AliasSet newTaintSet, StatementInstance si, StatementSet aliasPath,
-            InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment, AccessPath ap) {
+                                                        InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment, AccessPath ap) {
         AccessPath instanceAp = frameworkAssignment.getInstanceAccessPath(invokeExpr, ap.getUsedLine(), si);
         if (ap.getUsedLine() > si.getLineNo()) {
             aliasPath.add(si);
@@ -522,7 +520,7 @@ public class FrameworkModel {
     }
 
     private static void forwardReferenceToReturnFlow(AliasSet newTaintSet, StatementInstance si, InvokeExpr invokeExpr,
-            FrameworkAssignment frameworkAssignment, AccessPath ap) {
+                                                     FrameworkAssignment frameworkAssignment, AccessPath ap) {
         if ((si.getUnit() instanceof AssignStmt)) {
             Value v = ((AssignStmt) si.getUnit()).getLeftOp();
             if (!(v instanceof Constant) && !(AnalysisUtils.isPrimitiveType(v))) {
@@ -539,7 +537,7 @@ public class FrameworkModel {
             return;
         }
         Set<FrameworkAssignment> model = convertMethod(invokeExpr);
-        for (FrameworkAssignment frameworkAssignment: model) {
+        for (FrameworkAssignment frameworkAssignment : model) {
             if (frameworkAssignment.leftType.equals(VariableType.INSTANCE)) {
                 backwardReferenceFlow(fwSet, taintSet, newTaintSet, si, aliasPath, invokeExpr, frameworkAssignment);
             } else if (frameworkAssignment.leftType.equals(VariableType.RETURN)) {
@@ -551,11 +549,11 @@ public class FrameworkModel {
     }
 
     private static void backwardParamFlow(AliasSet fwSet, AliasSet taintSet, AliasSet newTaintSet, StatementInstance si,
-            InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+                                          InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
         List<Value> args = invokeExpr.getArgs();
-        for(int argPos = 0; argPos < args.size(); argPos++) {
+        for (int argPos = 0; argPos < args.size(); argPos++) {
             if (frameworkAssignment.rightParam == argPos) {
-                for (AccessPath ap: taintSet) {
+                for (AccessPath ap : taintSet) {
                     if (ap.startsWith(frameworkAssignment.getLeftParamAccessPath(invokeExpr, ap.getUsedLine(), si))) {
                         AccessPath rightAp = frameworkAssignment.getRightAccessPath(invokeExpr, ap.getUsedLine(), si);
                         if (!rightAp.isEmpty()) {
@@ -570,9 +568,9 @@ public class FrameworkModel {
     }
 
     private static void backwardReturnFlow(AliasSet fwSet, AliasSet taintSet, AliasSet newTaintSet, StatementInstance si,
-            InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+                                           InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
         if (si.getUnit() instanceof AssignStmt) {
-            for (AccessPath ap: taintSet) {
+            for (AccessPath ap : taintSet) {
                 if (ap.startsWith(frameworkAssignment.getReturnAccessPath((AssignStmt) si.getUnit(), ap.getUsedLine(), si))) {
                     AccessPath rightAp = frameworkAssignment.getRightAccessPath(invokeExpr, ap.getUsedLine(), si);
                     if (!rightAp.isEmpty()) {
@@ -586,9 +584,9 @@ public class FrameworkModel {
     }
 
     private static void backwardReferenceFlow(AliasSet fwSet, AliasSet taintSet, AliasSet newTaintSet, StatementInstance si,
-            StatementSet aliasPath, InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
+                                              StatementSet aliasPath, InvokeExpr invokeExpr, FrameworkAssignment frameworkAssignment) {
         if (invokeExpr instanceof InstanceInvokeExpr) {
-            for (AccessPath ap: taintSet) {
+            for (AccessPath ap : taintSet) {
                 if (ap.startsWith(frameworkAssignment.getInstanceAccessPath(invokeExpr, ap.getUsedLine(), si))) {
                     AccessPath rightAp = frameworkAssignment.getRightAccessPath(invokeExpr, ap.getUsedLine(), si);
                     if (!rightAp.isEmpty()) {
@@ -614,7 +612,7 @@ public class FrameworkModel {
             return false;
         }
         Set<FrameworkAssignment> model = convertMethod(invokeExpr);
-        for (FrameworkAssignment frameworkAssignment: model) {
+        for (FrameworkAssignment frameworkAssignment : model) {
             if (frameworkAssignment.leftType.equals(VariableType.INSTANCE) && !frameworkAssignment.rightType.equals(VariableType.INSTANCE) && !invokeExpr.getMethod().isStatic() && ap.baseEquals(((InstanceInvokeExpr) invokeExpr).getBase().toString())) {
                 return true;
             }

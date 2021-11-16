@@ -4,11 +4,11 @@ public class InvalidCommandsException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    public InvalidCommandsException () {
+    public InvalidCommandsException() {
         super("Invalid commands");
     }
 
-    public InvalidCommandsException (Exception e) {
+    public InvalidCommandsException(Exception e) {
         super("Invalid commands", e);
     }
 }

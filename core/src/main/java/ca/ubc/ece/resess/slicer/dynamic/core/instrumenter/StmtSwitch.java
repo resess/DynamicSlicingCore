@@ -3,9 +3,9 @@ package ca.ubc.ece.resess.slicer.dynamic.core.instrumenter;
 
 import soot.Body;
 import soot.Local;
+import soot.LongType;
 import soot.PatchingChain;
 import soot.RefType;
-import soot.LongType;
 import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
@@ -19,26 +19,27 @@ import soot.jimple.Jimple;
 import soot.jimple.LookupSwitchStmt;
 import soot.jimple.ReturnStmt;
 import soot.jimple.ReturnVoidStmt;
+import soot.jimple.Stmt;
 import soot.jimple.StringConstant;
 import soot.jimple.SwitchStmt;
 import soot.jimple.ThrowStmt;
-import soot.jimple.Stmt;
 
 
 public class StmtSwitch extends AbstractStmtSwitch {
-    
-    boolean threadInserted = false;
+
+    final boolean threadInserted;
     boolean isOriginal = false;
     boolean isCallback = false;
-    boolean isCallbackOrThread = false;
-    boolean timeTracking = false;
+    boolean isCallbackOrThread;
+    boolean timeTracking;
     Local startTimer = null;
     SootClass cls;
     SootMethod mtd;
     Unit u;
     Body b;
     PatchingChain<Unit> units;
-    public StmtSwitch(){
+
+    public StmtSwitch() {
         this.threadInserted = false;
         this.isCallbackOrThread = false;
         this.timeTracking = false;
@@ -69,8 +70,8 @@ public class StmtSwitch extends AbstractStmtSwitch {
     }
 
     public void setClassAndMethod(SootClass c, SootMethod m) {
-        this.cls=c;
-        this.mtd=m;
+        this.cls = c;
+        this.mtd = m;
     }
 
     public void setCallback(boolean c) {
@@ -81,42 +82,40 @@ public class StmtSwitch extends AbstractStmtSwitch {
         Local tmpRef = InstrumenterUtils.addPrintStream(b);
         Local tmpString = InstrumenterUtils.addTmpString(b);
         String payload = InstrumenterUtils.getPayload(TYPE.INST, u, cls, mtd, b);
-        if(isCallback)
-        {
+        if (isCallback) {
             payload = "CALLBACK_SLC: " + payload;
             isCallback = false;
         }
 
-        if (startTimer==null && timeTracking && isCallbackOrThread) {
+        if (startTimer == null && timeTracking && isCallbackOrThread) {
             startTimer = InstrumenterUtils.insertStartTimeTracking(u, b);
         }
         if (!isOriginal) {
             units.insertBefore(Jimple.v().newAssignStmt(
-                tmpRef, Jimple.v().newStaticFieldRef(
-                        Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())), u);
+                    tmpRef, Jimple.v().newStaticFieldRef(
+                            Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())), u);
 
-            units.insertBefore(Jimple.v().newAssignStmt(tmpString, 
+            units.insertBefore(Jimple.v().newAssignStmt(tmpString,
                     StringConstant.v(payload)), u);
-            
+
             SootMethod toCall = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
             units.insertBefore(Jimple.v().newInvokeStmt(
                     Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), tmpString)), u);
         }
         b.validate();
     }
-    
-    
+
+
     public void caseAssignStmt(AssignStmt stmt) {
         Local tmpRef = InstrumenterUtils.addPrintStream(b);
         Local tmpString = InstrumenterUtils.addTmpString(b);
         String payload = InstrumenterUtils.getPayload(TYPE.INST, u, cls, mtd, b);
-        if(isCallback)
-        {
+        if (isCallback) {
             payload = "CALLBACK_SLC: " + payload;
             isCallback = false;
         }
 
-        if (startTimer==null && timeTracking && isCallbackOrThread) {
+        if (startTimer == null && timeTracking && isCallbackOrThread) {
             startTimer = InstrumenterUtils.insertStartTimeTracking(u, b);
         }
 
@@ -124,29 +123,28 @@ public class StmtSwitch extends AbstractStmtSwitch {
             units.insertBefore(Jimple.v().newAssignStmt(
                     tmpRef, Jimple.v().newStaticFieldRef(
                             Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())), u);
-            
+
             units.insertBefore(Jimple.v().newAssignStmt(tmpString,
                     StringConstant.v(payload)), u);
-            
+
             SootMethod toCall = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
             units.insertBefore(Jimple.v().newInvokeStmt(
                     Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), tmpString)), u);
         }
         b.validate();
     }
-        
-    
+
+
     public void caseDefinitionStmt(DefinitionStmt stmt) {
         Local tmpRef = InstrumenterUtils.addPrintStream(b);
         Local tmpString = InstrumenterUtils.addTmpString(b);
         String payload = InstrumenterUtils.getPayload(TYPE.INST, u, cls, mtd, b);
-        if(isCallback)
-        {
+        if (isCallback) {
             payload = "CALLBACK_SLC: " + payload;
             isCallback = false;
         }
 
-        if (startTimer==null && timeTracking && isCallbackOrThread) {
+        if (startTimer == null && timeTracking && isCallbackOrThread) {
             startTimer = InstrumenterUtils.insertStartTimeTracking(u, b);
         }
 
@@ -157,24 +155,24 @@ public class StmtSwitch extends AbstractStmtSwitch {
 
             units.insertBefore(Jimple.v().newAssignStmt(tmpString,
                     StringConstant.v(payload)), u);
-            
+
             SootMethod toCall = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
             units.insertBefore(Jimple.v().newInvokeStmt(
                     Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), tmpString)), u);
         }
         b.validate();
     }
-    
+
     public void caseLookupSwitchStmt(LookupSwitchStmt stmt) {
         Local tmpRef = InstrumenterUtils.addPrintStream(b);
         Local tmpString = InstrumenterUtils.addTmpString(b);
         String payload = InstrumenterUtils.getPayload(TYPE.INST, u, cls, mtd, b);
-        if(isCallback) {
+        if (isCallback) {
             payload = "CALLBACK_SLC: " + payload;
             isCallback = false;
         }
 
-        if (startTimer==null && timeTracking && isCallbackOrThread) {
+        if (startTimer == null && timeTracking && isCallbackOrThread) {
             startTimer = InstrumenterUtils.insertStartTimeTracking(u, b);
         }
 
@@ -185,24 +183,24 @@ public class StmtSwitch extends AbstractStmtSwitch {
 
             units.insertBefore(Jimple.v().newAssignStmt(tmpString,
                     StringConstant.v(payload)), u);
-            
+
             SootMethod toCall = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
             units.insertBefore(Jimple.v().newInvokeStmt(
                     Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), tmpString)), u);
         }
         b.validate();
     }
+
     public void caseSwitchStmt(SwitchStmt stmt) {
         Local tmpRef = InstrumenterUtils.addPrintStream(b);
         Local tmpString = InstrumenterUtils.addTmpString(b);
         String payload = InstrumenterUtils.getPayload(TYPE.INST, u, cls, mtd, b);
-        if(isCallback)
-        {
+        if (isCallback) {
             payload = "CALLBACK_SLC: " + payload;
             isCallback = false;
         }
 
-        if (startTimer==null && timeTracking && isCallbackOrThread) {
+        if (startTimer == null && timeTracking && isCallbackOrThread) {
             startTimer = InstrumenterUtils.insertStartTimeTracking(u, b);
         }
 
@@ -213,24 +211,24 @@ public class StmtSwitch extends AbstractStmtSwitch {
 
             units.insertBefore(Jimple.v().newAssignStmt(tmpString,
                     StringConstant.v(payload)), u);
-            
+
             SootMethod toCall = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
             units.insertBefore(Jimple.v().newInvokeStmt(
                     Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), tmpString)), u);
         }
         b.validate();
     }
+
     public void caseIfStmt(IfStmt stmt) {
         Local tmpRef = InstrumenterUtils.addPrintStream(b);
         Local tmpString = InstrumenterUtils.addTmpString(b);
         String payload = InstrumenterUtils.getPayload(TYPE.INST, u, cls, mtd, b);
-        if(isCallback)
-        {
+        if (isCallback) {
             payload = "CALLBACK_SLC: " + payload;
             isCallback = false;
         }
 
-        if (startTimer==null && timeTracking && isCallbackOrThread) {
+        if (startTimer == null && timeTracking && isCallbackOrThread) {
             startTimer = InstrumenterUtils.insertStartTimeTracking(u, b);
         }
 
@@ -241,25 +239,24 @@ public class StmtSwitch extends AbstractStmtSwitch {
 
             units.insertBefore(Jimple.v().newAssignStmt(tmpString,
                     StringConstant.v(payload)), u);
-            
+
             SootMethod toCall = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
             units.insertBefore(Jimple.v().newInvokeStmt(
                     Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), tmpString)), u);
         }
         b.validate();
     }
-    
+
     public void caseStmt(Stmt stmt) {
         Local tmpRef = InstrumenterUtils.addPrintStream(b);
         Local tmpString = InstrumenterUtils.addTmpString(b);
         String payload = InstrumenterUtils.getPayload(TYPE.INST, u, cls, mtd, b);
-        if(isCallback)
-        {
+        if (isCallback) {
             payload = "CALLBACK_SLC: " + payload;
             isCallback = false;
         }
 
-        if (startTimer==null && timeTracking && isCallbackOrThread) {
+        if (startTimer == null && timeTracking && isCallbackOrThread) {
             startTimer = InstrumenterUtils.insertStartTimeTracking(u, b);
         }
 
@@ -267,10 +264,10 @@ public class StmtSwitch extends AbstractStmtSwitch {
             units.insertBefore(Jimple.v().newAssignStmt(
                     tmpRef, Jimple.v().newStaticFieldRef(
                             Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())), u);
-            
+
             units.insertBefore(Jimple.v().newAssignStmt(tmpString,
                     StringConstant.v(payload)), u);
-            
+
             SootMethod toCall = Scene.v().getSootClass("java.io.PrintStream").getMethod("void println(java.lang.String)");
             units.insertBefore(Jimple.v().newInvokeStmt(
                     Jimple.v().newVirtualInvokeExpr(tmpRef, toCall.makeRef(), tmpString)), u);
@@ -314,26 +311,26 @@ public class StmtSwitch extends AbstractStmtSwitch {
             b.getLocals().add(endTime);
             SootMethod getTime = Scene.v().getSootClass("java.lang.System").getMethod("long nanoTime()");
             units.insertBefore(Jimple.v().newAssignStmt(endTime,
-                Jimple.v().newStaticInvokeExpr(getTime.makeRef())), u);
+                    Jimple.v().newStaticInvokeExpr(getTime.makeRef())), u);
             units.insertBefore(Jimple.v().newAssignStmt(
                     tmpRef, Jimple.v().newStaticFieldRef(
                             Scene.v().getField("<java.lang.System: java.io.PrintStream out>").makeRef())), u);
             units.insertBefore(Jimple.v().newAssignStmt(
-                sb, Jimple.v().newNewExpr( RefType.v("java.lang.StringBuilder"))), u);
+                    sb, Jimple.v().newNewExpr(RefType.v("java.lang.StringBuilder"))), u);
             units.insertBefore(Jimple.v().newInvokeStmt(
-                Jimple.v().newSpecialInvokeExpr (sb, sbInit.makeRef())), u);
+                    Jimple.v().newSpecialInvokeExpr(sb, sbInit.makeRef())), u);
             units.insertBefore(Jimple.v().newInvokeStmt(
-                Jimple.v().newVirtualInvokeExpr (sb, sbAppendString.makeRef(), StringConstant.v("Timer-Method:"+b.getMethod().getSignature()+":"))), u);
+                    Jimple.v().newVirtualInvokeExpr(sb, sbAppendString.makeRef(), StringConstant.v("Timer-Method:" + b.getMethod().getSignature() + ":"))), u);
             units.insertBefore(Jimple.v().newInvokeStmt(
-                Jimple.v().newVirtualInvokeExpr (sb, sbAppendLong.makeRef(), startTimer)), u);
+                    Jimple.v().newVirtualInvokeExpr(sb, sbAppendLong.makeRef(), startTimer)), u);
             units.insertBefore(Jimple.v().newInvokeStmt(
-                Jimple.v().newVirtualInvokeExpr (sb, sbAppendString.makeRef(), StringConstant.v(":"))), u);
+                    Jimple.v().newVirtualInvokeExpr(sb, sbAppendString.makeRef(), StringConstant.v(":"))), u);
             units.insertBefore(Jimple.v().newInvokeStmt(
-                    Jimple.v().newVirtualInvokeExpr (sb, sbAppendLong.makeRef(), endTime)), u);
+                    Jimple.v().newVirtualInvokeExpr(sb, sbAppendLong.makeRef(), endTime)), u);
             units.insertBefore(Jimple.v().newAssignStmt(tmpString,
-                Jimple.v().newVirtualInvokeExpr (sb, sbToString.makeRef())), u);
+                    Jimple.v().newVirtualInvokeExpr(sb, sbToString.makeRef())), u);
             units.insertBefore(Jimple.v().newInvokeStmt(
-                Jimple.v().newVirtualInvokeExpr(tmpRef, printerMethod.makeRef(), tmpString)), u);
+                    Jimple.v().newVirtualInvokeExpr(tmpRef, printerMethod.makeRef(), tmpString)), u);
 
             // units.insertBefore(Jimple.v().newInvokeStmt(
             //     Jimple.v().newStaticInvokeExpr(printerMethod.makeRef(), tmpString)), u);
