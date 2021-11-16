@@ -1,5 +1,7 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.utils;
 
+import java.util.List;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
@@ -12,8 +14,6 @@ import soot.jimple.IdentityStmt;
 import soot.jimple.IfStmt;
 import soot.jimple.InvokeExpr;
 import soot.jimple.Stmt;
-
-import java.util.List;
 
 public class AnalysisUtils {
 

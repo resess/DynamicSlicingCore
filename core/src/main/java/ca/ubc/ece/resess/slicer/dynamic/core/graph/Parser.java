@@ -1,15 +1,5 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.graph;
 
-import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Rule;
-import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Symbol;
-import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Terminal;
-import ca.ubc.ece.resess.slicer.dynamic.core.statements.Statement;
-import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,6 +12,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.InflaterOutputStream;
+
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Rule;
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Symbol;
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Terminal;
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.Statement;
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 
 public class Parser {

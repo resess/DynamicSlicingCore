@@ -1,5 +1,9 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.utils;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.CalledChunk;
@@ -7,10 +11,6 @@ import ca.ubc.ece.resess.slicer.dynamic.core.graph.CallerContext;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import soot.toolkits.scalar.Pair;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 public class AnalysisCache {
 

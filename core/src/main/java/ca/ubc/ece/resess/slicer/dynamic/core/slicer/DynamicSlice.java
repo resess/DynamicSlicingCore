@@ -1,6 +1,15 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.DynamicControlFlowGraph;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
@@ -11,15 +20,6 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import soot.jimple.ReturnVoidStmt;
 import soot.toolkits.scalar.Pair;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class DynamicSlice
         extends ArrayList<Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>>> {
@@ -259,7 +259,9 @@ public class DynamicSlice
         Set<String> sliceLines = new HashSet<>();
         for (Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry : this) {
             StatementInstance destinationNode = entry.getO1().getO1();
-            sliceLines.add(destinationNode.getJavaSourceFile() + ":" + destinationNode.getJavaSourceLineNo());
+            if (destinationNode.getJavaSourceLineNo() != -1) {
+                sliceLines.add(destinationNode.getJavaSourceFile() + ":" + destinationNode.getJavaSourceLineNo());
+            }
         }
         return sliceLines;
     }

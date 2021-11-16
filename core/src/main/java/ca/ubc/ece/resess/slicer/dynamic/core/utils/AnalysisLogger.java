@@ -1,10 +1,10 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.utils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AnalysisLogger {
 

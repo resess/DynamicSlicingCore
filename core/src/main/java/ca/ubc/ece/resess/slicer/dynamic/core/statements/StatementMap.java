@@ -1,10 +1,10 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.statements;
 
-import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 
 
 public class StatementMap extends LinkedHashMap<String, StatementInstance> {

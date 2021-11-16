@@ -1,5 +1,8 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.controldependence.ControlDominator;
@@ -25,9 +28,6 @@ import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
 import soot.jimple.Stmt;
 import soot.toolkits.scalar.Pair;
-
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 public class SliceMethod {
     protected final DynamicControlFlowGraph icdg;

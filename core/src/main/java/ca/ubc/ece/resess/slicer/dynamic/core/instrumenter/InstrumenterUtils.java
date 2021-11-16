@@ -1,6 +1,12 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.instrumenter;
 
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import soot.Body;
 import soot.IntType;
@@ -33,12 +39,6 @@ import soot.jimple.Stmt;
 import soot.jimple.StringConstant;
 import soot.jimple.ThrowStmt;
 import soot.util.Chain;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 
 public class InstrumenterUtils {

@@ -1,5 +1,10 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.accesspath;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.exceptions.EmptyAccessPathException;
 import ca.ubc.ece.resess.slicer.dynamic.core.exceptions.NullTypeException;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
@@ -8,11 +13,6 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
 import soot.SootMethod;
 import soot.Type;
 import soot.toolkits.scalar.Pair;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 public class AccessPath {

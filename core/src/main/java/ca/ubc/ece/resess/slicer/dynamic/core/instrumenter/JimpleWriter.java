@@ -1,11 +1,11 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.instrumenter;
 
+import java.util.Arrays;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import soot.PackManager;
 import soot.Scene;
 import soot.options.Options;
-
-import java.util.Arrays;
 
 public class JimpleWriter {
     private final String outFilePath;

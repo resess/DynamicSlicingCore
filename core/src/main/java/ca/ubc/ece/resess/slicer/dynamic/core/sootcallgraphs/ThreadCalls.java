@@ -22,6 +22,10 @@ package ca.ubc.ece.resess.slicer.dynamic.core.sootcallgraphs;
  * #L%
  */
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import soot.Body;
 import soot.Kind;
@@ -43,10 +47,6 @@ import soot.options.Options;
 import soot.util.Chain;
 import soot.util.LargeNumberedMap;
 import soot.util.NumberedString;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Models the call graph.

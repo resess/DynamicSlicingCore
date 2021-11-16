@@ -1,5 +1,17 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.graph;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
@@ -16,21 +28,11 @@ import soot.SootMethod;
 import soot.Unit;
 import soot.util.Chain;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 
 public class TraceTranslator {
 
+
+    private static int prevLine = -1;
 
     TraceTranslator() {
         throw new IllegalStateException("Utility class");
@@ -107,7 +109,7 @@ public class TraceTranslator {
     private static List<StatementInstance> createStatementInstances(List<TraceStatement> tr) {
         Chain<SootClass> chain = Scene.v().getApplicationClasses();
         Map<String, SootMethod> allMethods = DynamicControlFlowGraph.createMethodsMap(chain);
-        Map<SootMethod, Map<String, Unit>> unitStringsCache = new HashMap<>();
+        Map<SootMethod, Map<String, List<Unit>>> unitStringsCache = new HashMap<>();
         List<StatementInstance> statementInstances = new ArrayList<>();
 
         StatementInstance createdStatement;
@@ -131,7 +133,7 @@ public class TraceTranslator {
 
             PatchingChain<Unit> units = body.getUnits();
 
-            Map<String, Unit> unitString;
+            Map<String, List<Unit>> unitString;
             if (unitStringsCache.containsKey(mt)) {
                 unitString = unitStringsCache.get(mt);
             } else {
@@ -144,7 +146,7 @@ public class TraceTranslator {
         return statementInstances;
     }
 
-    private static StatementInstance createStatementInstance(SootMethod mt, Map<String, Unit> unitString, TraceStatement traceStatement, int lineNumber) {
+    private static StatementInstance createStatementInstance(SootMethod mt, Map<String, List<Unit>> unitString, TraceStatement traceStatement, int lineNumber) {
         StatementInstance createdStatement = null;
         if (unitString.containsKey(traceStatement.getInstruction())) {
             createdStatement = matchStatementInstanceToTraceLine(mt, unitString, traceStatement, lineNumber);
@@ -156,12 +158,20 @@ public class TraceTranslator {
         return createdStatement;
     }
 
-    private static StatementInstance matchStatementInstanceToTraceLine(SootMethod mt, Map<String, Unit> unitString, TraceStatement traceStatement, int lineNumber) {
+    private static StatementInstance matchStatementInstanceToTraceLine(SootMethod mt, Map<String, List<Unit>> unitString, TraceStatement traceStatement, int lineNumber) {
         StatementInstance createdStatement = null;
         String us = traceStatement.getInstruction();
-        Unit unit = unitString.get(us);
+        List<Unit> units = unitString.get(us);
         try {
+            Unit unit;
+            if (units.size() == 1) {
+                unit = units.get(0);
+            } else {
+                int idx = DynamicControlFlowGraph.getClosestUnitByLineNumber(units, prevLine);
+                unit = units.get(idx);
+            }
             createdStatement = new StatementInstance(mt, unit, lineNumber, traceStatement.getThreadId(), traceStatement.getFieldAddr(), unit.getJavaSourceStartLineNumber(), mt.getDeclaringClass().getFilePath());
+            prevLine = unit.getJavaSourceStartLineNumber();
         } catch (Exception e) {
             AnalysisLogger.error("Cannot create instruction {}", traceStatement);
         }
@@ -169,7 +179,7 @@ public class TraceTranslator {
     }
 
 
-    private static StatementInstance matchStatementInstanceToClosestTraceLine(SootMethod mt, Map<String, Unit> unitString, TraceStatement traceStatement, int lineNumber) {
+    private static StatementInstance matchStatementInstanceToClosestTraceLine(SootMethod mt, Map<String, List<Unit>> unitString, TraceStatement traceStatement, int lineNumber) {
         int leastDistance = Integer.MAX_VALUE;
         String second = traceStatement.getInstruction();
         Unit closestUnit = null;
@@ -188,7 +198,13 @@ public class TraceTranslator {
                     distance = threshold;
                 }
                 if (distance < leastDistance) {
-                    closestUnit = unitString.get(us);
+                    List<Unit> units = unitString.get(us);
+                    if (units.size() == 1) {
+                        closestUnit = units.get(0);
+                    } else {
+                        int idx = DynamicControlFlowGraph.getClosestUnitByLineNumber(units, prevLine);
+                        closestUnit = units.get(idx);
+                    }
                     leastDistance = distance;
                 }
             }

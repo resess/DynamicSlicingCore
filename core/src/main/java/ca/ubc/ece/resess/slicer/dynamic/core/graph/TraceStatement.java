@@ -1,8 +1,8 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.graph;
 
-import ca.ubc.ece.resess.slicer.dynamic.core.statements.Statement;
-
 import java.io.Serializable;
+
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.Statement;
 
 public class TraceStatement implements Serializable {
     private long fieldAddr = -1L;
