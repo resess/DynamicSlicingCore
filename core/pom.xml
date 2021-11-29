@@ -123,12 +123,12 @@
         </plugins>
     </build>
 
-    <!--<repositories>
+    <repositories>
         <repository>
-            <id>localrepository</id>
-            <url>file://${project.basedir}/libs</url>
+            <id>local-repo-repository</id>
+            <url>file://${project.basedir}/lib</url>
         </repository>
-    </repositories>-->
+    </repositories>
     <dependencies>
         <dependency>
             <groupId>guru.nidi</groupId>
@@ -136,21 +136,15 @@
             <version>0.18.1</version>
         </dependency>
         <dependency>
-          <groupId>org.soot-oss</groupId>
-          <artifactId>soot</artifactId>
-          <version>[4.2.1]</version>
-          <scope>runtime</scope>
+            <groupId>org.soot-oss</groupId>
+            <artifactId>soot</artifactId>
+            <version>[4.2.1]</version>
         </dependency>
         <dependency>
+            <!-- the 2.9.0 jar on maven central is bad (bundles deps). download from github instead: https://github.com/secure-software-engineering/FlowDroid/releases. -->
             <groupId>de.tud.sse</groupId>
             <artifactId>soot-infoflow</artifactId>
             <version>2.9.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.soot-oss</groupId>
-                    <artifactId>soot</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.hamcrest/java-hamcrest -->
         <dependency>
@@ -194,13 +188,16 @@
             <version>1.4</version>
         </dependency>
 
-        <!-- We need this dependency to have output on the command
-        line for the JAR with dependencies -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.32</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.5</version>
-            <optional>true</optional>
+            <version>1.7.32</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
