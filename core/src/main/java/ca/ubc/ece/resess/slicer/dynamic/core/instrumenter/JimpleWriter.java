@@ -25,6 +25,7 @@ public class JimpleWriter {
             Options.v().set_process_dir(Arrays.asList(execPath));
             Options.v().set_output_format(Options.output_format_jimple);
             Options.v().set_output_dir(this.outFilePath);
+            Options.v().setPhaseOption("jb", "use-original-names:true");
         }
         AnalysisLogger.log(true, "Initialization done");
     }
