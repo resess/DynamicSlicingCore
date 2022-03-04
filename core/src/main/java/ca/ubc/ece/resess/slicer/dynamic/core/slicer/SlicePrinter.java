@@ -4,10 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.jgrapht.Graphs;
 
 import org.apache.commons.io.FileUtils;
@@ -123,9 +128,7 @@ public class SlicePrinter {
     }
 
     public static void printSliceWithDependencies(String outDir, DynamicSlice dynamicSlice) {
-        List<String> toPrint = new ArrayList<>();
-        toPrint.add("Slice:");
-        toPrint.add("---------------------");
+        Map<Integer, Set<String>> toPrintMap = new HashMap<>();
         for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: dynamicSlice) {
             String edge = dynamicSlice.getEdges(entry.getO1().getO1().getLineNo(), entry.getO2().getO1().getLineNo());
             StatementInstance sliceNode = entry.getO1().getO1();
@@ -152,10 +155,23 @@ public class SlicePrinter {
             sb.append("-- ");
             sb.append(sourceStr);
             String newLine = sb.toString();
-            if (!toPrint.contains(newLine)) {
-                toPrint.add(newLine);
+            Set<String> linesAtNode = toPrintMap.getOrDefault(sliceNode.getLineNo(), new HashSet<>());
+            linesAtNode.add(newLine);
+            toPrintMap.put(sliceNode.getLineNo(), linesAtNode);
+        }
+        List<String> toPrint = new ArrayList<>();
+        toPrint.add("Slice:");
+        toPrint.add("---------------------");
+
+        
+        for (Integer key : toPrintMap.keySet().stream().sorted().collect(Collectors.toList())) {
+            for (String newLine : toPrintMap.get(key)) {
+                if (!toPrint.contains(newLine)) {
+                    toPrint.add(newLine);
+                }
             }
         }
+
         String fileName = outDir + File.separator + "slice-dependencies.log";
         try {
             FileUtils.writeLines(new File(fileName), toPrint);
