@@ -127,8 +127,8 @@ public class SlicePrinter {
         }
     }
 
-    public static void printSliceWithDependencies(String outDir, DynamicSlice dynamicSlice) {
-        Map<Integer, Set<String>> toPrintMap = new HashMap<>();
+    public static void printSliceWithDependencies(String outDir, DynamicSlice dynamicSlice, List<Integer> backwardSlicePositions) {
+        Map<Integer, List<String>> toPrintMap = new HashMap<>();
         for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: dynamicSlice) {
             String edge = dynamicSlice.getEdges(entry.getO1().getO1().getLineNo(), entry.getO2().getO1().getLineNo());
             StatementInstance sliceNode = entry.getO1().getO1();
@@ -141,7 +141,8 @@ public class SlicePrinter {
             if (destStr.contains("goto")) {
                 destStr = destStr.split("goto")[0];
             }
-            destStr = "(" + sliceNode.getJavaSourceFile() + ":" + sliceNode.getJavaSourceLineNo() + ")  " + destStr;
+            String destSource = sliceNode.getJavaSourceFile() + ":" + sliceNode.getJavaSourceLineNo();
+            destStr = "(" + destSource + ")  " + destStr;
             String edgeStr = "";
             if (edge.equals("data")) {
                 edgeStr = ":" + sliceEdge.getPathString();
@@ -155,11 +156,18 @@ public class SlicePrinter {
             sb.append("-- ");
             sb.append(sourceStr);
             String newLine = sb.toString();
-            Set<String> linesAtNode = toPrintMap.getOrDefault(sliceNode.getLineNo(), new HashSet<>());
+            
+            
+            int key = sliceNode.getLineNo();
+            if ((sliceNode.getLineNo() == sourceNode.getLineNo()) && backwardSlicePositions.contains(sliceNode.getLineNo()) && backwardSlicePositions.contains(sourceNode.getLineNo())) {
+                key = Integer.MAX_VALUE-1;
+            }
+            List<String> linesAtNode = toPrintMap.getOrDefault(key, new ArrayList<>());
             linesAtNode.add(newLine);
-            toPrintMap.put(sliceNode.getLineNo(), linesAtNode);
+            toPrintMap.put(key, linesAtNode);
         }
         List<String> toPrint = new ArrayList<>();
+        AnalysisLogger.log(true, "toPrintMap is {}", toPrintMap);
         toPrint.add("Slice:");
         toPrint.add("---------------------");
 
