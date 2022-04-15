@@ -400,12 +400,12 @@ public class InstrumenterUtils {
             units.insertBefore(temp, u);
         }
         
-        try {
-            b.validate();
-        } catch (Exception e) {
-            AnalysisLogger.log(true, "Statement: {}", u);
-            throw e;
-        }
+        // try {
+        //     b.validate();
+        // } catch (Exception e) {
+        //     AnalysisLogger.log(true, "Statement: {}", u);
+        //     throw e;
+        // }
     }
     
     
@@ -450,12 +450,12 @@ public class InstrumenterUtils {
             units.insertBefore(temp, u);
         }
         
-        try {
-            b.validate();
-        } catch (Exception e) {
-            AnalysisLogger.log(true, "Statement: {}", u);
-            throw e;
-        }
+        // try {
+        //     b.validate();
+        // } catch (Exception e) {
+        //     AnalysisLogger.log(true, "Statement: {}", u);
+        //     throw e;
+        // }
     }
     
     public static Local insertStartTimeTracking(Unit u, Body b){
@@ -542,12 +542,12 @@ public class InstrumenterUtils {
             // instrumentedUnits.add(temp);
             // units.insertBefore(temp, u);
         }
-        try {
-            b.validate();
-        } catch (Exception e) {
-            AnalysisLogger.log(true, "Statement: {}", u);
-            throw e;
-        }
+        // try {
+        //     b.validate();
+        // } catch (Exception e) {
+        //     AnalysisLogger.log(true, "Statement: {}", u);
+        //     throw e;
+        // }
     }
 }
 
