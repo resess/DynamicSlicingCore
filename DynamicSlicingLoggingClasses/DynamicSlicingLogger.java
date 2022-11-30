@@ -60,7 +60,7 @@ public class DynamicSlicingLogger{
 
     public static void flush() {
         synchronized (queue) {
-            outStream.println("Flushing queue: size is " + queueIndex);
+            // outStream.println("Flushing queue: size is " + queueIndex);
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < queueIndex; i++) {
                 sb.append(queue[i]);

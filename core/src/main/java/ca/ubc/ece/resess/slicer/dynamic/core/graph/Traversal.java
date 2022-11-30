@@ -369,7 +369,7 @@ public class Traversal {
         } else if (caller.getUnit() instanceof AssignStmt) {
             callerExp = ((AssignStmt) caller.getUnit()).getInvokeExpr();
         } else {
-            AnalysisLogger.warn(true, "unsupported call stmt {}", caller);
+            // AnalysisLogger.warn(true, "unsupported call stmt {}", caller);
             return new Pair<>(aliasedArgs, remainingSet);
         }
         

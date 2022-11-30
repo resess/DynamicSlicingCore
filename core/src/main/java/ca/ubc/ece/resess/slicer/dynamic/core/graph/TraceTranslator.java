@@ -75,6 +75,7 @@ public class TraceTranslator {
     
     public static void translateTraceFile(String staticLogFile, String traceName, String outDir) {
         File outTranslatedTrace = new File(outDir, "translated-trace.log");
+        Map<String, List<TraceStatement>> traceCache = new HashMap<>();
         if (outTranslatedTrace.isFile()) {
             outTranslatedTrace.delete();
         }
@@ -123,7 +124,7 @@ public class TraceTranslator {
                     } catch (ArrayIndexOutOfBoundsException e) {
                         // Ignored
                     }
-                    Parser.addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldId);
+                    Parser.addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldId, traceCache);
                     
                 }
                 List<StatementInstance> statementInstances = createStatementInstances(listTraces);

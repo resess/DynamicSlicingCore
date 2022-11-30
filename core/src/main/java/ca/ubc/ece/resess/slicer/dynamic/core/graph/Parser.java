@@ -3,6 +3,7 @@ package ca.ubc.ece.resess.slicer.dynamic.core.graph;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,12 +38,62 @@ public class Parser {
       }
 
     public static Trace readFile(String fileName, String staticLogFile) {
-        return expandTrace(staticLogFile, fileName);
+        Trace trace = expandTrace(staticLogFile, fileName);
+        // trace = filterTrace(trace, 46);
+        // trace = filterTrace(trace, 38);
+        // trace = filterTrace(trace, 34);
+        // trace = filterTrace(trace, 26);
+        // trace = filterTrace(trace, 12);
+        // trace = filterTrace(trace, 14);
+        // trace = filterTrace(trace, 10);
+        // trace = filterTrace(trace, 6);
+        // trace = filterTrace(trace, 4);
+
+        // File outTraceFile = new File(fileName + ".out");
+        // try {
+        //     FileWriter fileWriter = new FileWriter(outTraceFile);
+        //     for (TraceStatement traceStatement: trace) {
+        //         fileWriter.write(traceStatement.toString() + "\n");
+        //     }
+        //     fileWriter.flush();
+        //     fileWriter.close();
+        // } catch (IOException e) {
+        //     throw new Error("Cannot save out trace file: " + outTraceFile);
+        // }
+        AnalysisLogger.warn(true, "Writing out trace file is disabled!");
+
+        
+        return trace;
+    }
+
+    private static Trace filterTrace (Trace trace, int window) {
+        Trace filteredTrace = new Trace();
+        AnalysisLogger.warn(true, "Trace size was {}", trace.size());
+        filteredTrace.addAll(trace.subList(0, window));
+        int remaining = 0;
+        for (int i = window; i <= trace.size(); i+=window) {
+            List<TraceStatement> firstSubTrace = filteredTrace.subList(filteredTrace.size()-window, filteredTrace.size());
+            List<TraceStatement> secondSubTrace = trace.subList(i-window, i);
+            if (firstSubTrace.equals(secondSubTrace)) {
+                // AnalysisLogger.log(true, "Traces match at {}", i);
+                // AnalysisLogger.log(true, "Matched {}", secondSubTrace);
+            } else {
+                filteredTrace.addAll(secondSubTrace);
+            }
+            remaining = trace.size() - i;
+        }
+        if (remaining > 0) {
+            filteredTrace.addAll(trace.subList(trace.size() - remaining + 1, trace.size()));
+        }
+        
+        AnalysisLogger.warn(true, "Trace size after {} reduction {}", window, filteredTrace.size());
+        return filteredTrace;
     }
 
     public static Trace expandTrace(String staticLogFile, String traceName) {
         Trace listTraces = new Trace();
         Map<Long, List<String>> logMap = new HashMap<>();
+        Map<String, List<TraceStatement>> traceCache = new HashMap<>();
         JSONParser parser = new JSONParser();
         try {
             AnalysisLogger.log(true, "Abs path for static-log {}", new File(staticLogFile).getAbsolutePath());
@@ -92,14 +143,18 @@ public class Parser {
                     } catch (ArrayIndexOutOfBoundsException e) {
                         // Ignored
                     }
-                    addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldId);
+                    addToExpandedTrace(listTraces, logMap, lineNum, threadNum, fieldId, traceCache);
                 }
-                AnalysisLogger.log(true, "Expanded trace size: {}", listTraces.size());
+                // AnalysisLogger.log(true, "Expanded trace size: {}", listTraces.size());
             }
         } catch (IOException e) {
             AnalysisLogger.warn(true, "Cannot read trace file! {}", e);
         }
         AnalysisLogger.log(true, "Done parsing");
+
+
+
+
         return listTraces;
     }
 
@@ -131,7 +186,14 @@ public class Parser {
     }
 
     protected static void addToExpandedTrace(Trace listTraces, Map<Long, List<String>> logMap, long lineNum,
-            long threadNum, int fieldId) {
+            long threadNum, int fieldId, Map<String, List<TraceStatement>> traceCache) {
+        
+        String cacheKey = lineNum + DELEMITER + threadNum + DELEMITER + fieldId;
+        if (traceCache.containsKey(cacheKey)) {
+            listTraces.addAll(traceCache.get(cacheKey));
+            return;
+        }
+        List<TraceStatement> tracesToAdd = new ArrayList<>();
         try {
             for (String line : logMap.get(lineNum)) {
                 line = line + DELEMITER + threadNum + DELEMITER + fieldId;
@@ -147,11 +209,14 @@ public class Parser {
                 if(tokens.length > 4) {
                     tr.setFieldAddr(Long.valueOf(tokens[4]));
                 }
-                listTraces.add(tr);
+                tracesToAdd.add(tr);
             }
+            
         } catch (NullPointerException e) {
             // Ignored
         }
+        traceCache.put(cacheKey, tracesToAdd);
+        listTraces.addAll(tracesToAdd);
     }
 
     protected static String decompress(String compressed64) {

@@ -11,6 +11,9 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 public class StatementMap extends LinkedHashMap<String, StatementInstance> {
     private static final long serialVersionUID = 1L;
 
+    private StatementMap reverseChunk = null;
+
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -55,7 +58,10 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
     }
 
     public StatementMap reverseTraceOrder(StatementInstance startNode) {
-        StatementMap newChunk = new StatementMap();
+        if (reverseChunk != null) {
+            return reverseChunk;
+        }
+        reverseChunk = new StatementMap();
         ArrayList<StatementInstance> orderedTrace = new ArrayList<>();
         for (Map.Entry<String, StatementInstance> entry : this.entrySet()) {
             orderedTrace.add(entry.getValue());
@@ -73,8 +79,8 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
             if (iu.equals(startNode)) {
                 continue;
             }
-            newChunk.put(iu.toString(), iu);
+            reverseChunk.put(iu.toString(), iu);
         }
-        return newChunk;
+        return reverseChunk;
     }
 }

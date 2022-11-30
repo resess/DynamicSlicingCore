@@ -4,6 +4,8 @@ import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,6 +26,8 @@ public class SlicingWorkingSet extends ArrayDeque<Pair<StatementInstance, Access
     
     private static final long serialVersionUID = 1L;
     private boolean stopSlicing;
+
+    private long timeLastTrimmed = System.currentTimeMillis();
 
 
     DynamicSlice dynamicSlice = new DynamicSlice();
@@ -62,7 +66,33 @@ public class SlicingWorkingSet extends ArrayDeque<Pair<StatementInstance, Access
         
         if (!this.dynamicSlice.hasEdge(frontier.getO1().getLineNo(), source.getO1().getLineNo(), edgeType)) {
             dynamicSlice.add(frontier, source, edgeType);
+
+            // if (((System.currentTimeMillis() - timeLastTrimmed) > 100000)) {
+            //     AnalysisLogger.log(true, "Working set has: {}", this);
+            // }
+            // if (((System.currentTimeMillis() - timeLastTrimmed) > 10000) && this.size() > 100) {
+            //     AnalysisLogger.log(true, "Working set size: {}", this.size());
+            //     trim();
+            //     timeLastTrimmed = System.currentTimeMillis();
+            // }
         }
+    }
+
+    private void trim() {
+        Set<String> seenStatements = new HashSet<>();
+        Pair<StatementInstance, AccessPath> [] workingSetArray = this.toArray(new Pair [0]);
+        int removedCount = 0;
+        for (int i = workingSetArray.length - 1; i >= 0; i--) {
+            StatementInstance stmt = workingSetArray[i].getO1();
+            String stmtString = stmt.getUnit().toString() + stmt.getMethod().toString();
+            if (seenStatements.contains(stmtString)) {
+                this.remove(workingSetArray[i]);
+                removedCount++;
+            } else {
+                seenStatements.add(stmtString);
+            }
+        }
+        AnalysisLogger.log(true, "Removed {} elements from working set", removedCount);
     }
 
     private boolean isVisited(String pos) {
