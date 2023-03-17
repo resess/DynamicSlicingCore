@@ -1,15 +1,7 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.Graphs;
@@ -47,6 +39,10 @@ public class DynamicSlice
         //     s += ste.toString();
         // }
         // AnalysisLogger.log(true, "Called at {}", s);
+    }
+
+    public DynamicSlice(Collection<Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>>> collection){
+        super( collection );
     }
 
     public boolean hasEdge(Integer src, Integer dst, String edgeType) {
@@ -288,30 +284,18 @@ public class DynamicSlice
         return sliceLines;
     }
 
-    public DynamicSlice union(DynamicSlice other) {
-        DynamicSlice unionSlice = new DynamicSlice();
-        unionSlice.addAll(this);
-        unionSlice.addAll(other);
-        for (Integer v: chopGraph.vertexSet()) {
-            unionSlice.chopGraph.addVertex(v);
-        }
-        for (DefaultWeightedEdge e: chopGraph.edgeSet()) {
-            Graphs.addEdgeWithVertices(unionSlice.chopGraph, chopGraph, e);
-        }
+    public void union(DynamicSlice other) {
+        this.addAll(other);
         for (Integer v: other.chopGraph.vertexSet()) {
-            unionSlice.chopGraph.addVertex(v);
+            this.chopGraph.addVertex(v);
         }
         for (DefaultWeightedEdge e: other.chopGraph.edgeSet()) {
-            Graphs.addEdgeWithVertices(unionSlice.chopGraph, other.chopGraph, e);
+            Graphs.addEdgeWithVertices(this.chopGraph, other.chopGraph, e);
         }
-        
-        unionSlice.methodOfStatement.putAll(methodOfStatement);
-        unionSlice.methodOfStatement.putAll(other.methodOfStatement);
 
-        unionSlice.edgeTypes.addAll(edgeTypes);
-        unionSlice.edgeTypes.addAll(other.edgeTypes);
-
-        return unionSlice;
+        this.methodOfStatement.putAll(other.methodOfStatement);
+        this.edgeTypes.addAll(other.edgeTypes);
+        return;
     }
 }
 

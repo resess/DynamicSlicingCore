@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 
 
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.DynamicControlFlowGraph;
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.LazyStatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
@@ -37,37 +38,37 @@ public class ControlDominator{
         return Integer.valueOf(matcher.group());
     }
 
-    public static StatementInstance getControlDominator(StatementInstance stmt, StatementMap chunk, DynamicControlFlowGraph dcfg){
+    public static StatementInstance getControlDominator(StatementInstance stmt, LazyStatementMap lazyChunk, DynamicControlFlowGraph dcfg){
         if (outOfMemMethods.contains(stmt.getMethod())) {
             return null;
         }
-        ControlDomRunner cdr = new ControlDomRunner(stmt, chunk, dcfg);
-        Thread t = new Thread(cdr);
-        try {
-            t.start();
-            t.join(30*1000);
-            t.interrupt();
-        } catch (InterruptedException e) {
-            // pass
-        }
-        return cdr.getCandidateIu();
+        //ControlDomRunner cdr = new ControlDomRunner(stmt, lazyChunk, dcfg);
+//        Thread t = new Thread(cdr);
+//        try {
+//            t.start();
+//            t.join(30*1000);
+//            t.interrupt();
+//        } catch (InterruptedException e) {
+//            // pass
+//        }
+        return getControlDom(stmt, lazyChunk, dcfg);
     }
 
 
     static class ControlDomRunner implements Runnable {
         private final StatementInstance stmt;
-        private final StatementMap chunk;
+        private final LazyStatementMap lazyChunk;
         private final DynamicControlFlowGraph dcfg;
         private StatementInstance candidateIu;
 
-        ControlDomRunner (StatementInstance stmt, StatementMap chunk, DynamicControlFlowGraph dcfg){
+        ControlDomRunner (StatementInstance stmt, LazyStatementMap lazyChunk, DynamicControlFlowGraph dcfg){
             this.stmt = stmt;
-            this.chunk = chunk;
+            this.lazyChunk = lazyChunk;
             this.dcfg = dcfg;
         }
         @Override
         public void run() {
-            this.candidateIu = getControlDom(stmt, chunk, dcfg);
+            this.candidateIu = getControlDom(stmt, lazyChunk, dcfg);
         }
 
         public StatementInstance getCandidateIu() {
@@ -76,7 +77,7 @@ public class ControlDominator{
     }
 
 
-    private static StatementInstance getControlDom(StatementInstance stmt, StatementMap chunk, DynamicControlFlowGraph icdg) {
+    private static StatementInstance getControlDom(StatementInstance stmt, LazyStatementMap lazyChunk, DynamicControlFlowGraph icdg) {
         StatementInstance candidateIu = null;
         try {
             EnhancedUnitGraph cug;
@@ -96,7 +97,7 @@ public class ControlDominator{
                     if (regionUnits.toString().contains(":= @caughtexception") || regionUnits.toString().contains("goto [?= throw")) {
                         candidateIu = lineBeforeException(icdg, regionUnits, stmt);
                     } else {
-                        candidateIu = matchControlDom(stmt, chunk, cug, ra.getRegions(), r);
+                        candidateIu = matchControlDom(stmt, lazyChunk, cug, ra.getRegions(), r);
                     }
                 }
             }
@@ -110,18 +111,18 @@ public class ControlDominator{
     }
 
 
-    private static StatementInstance matchControlDom(StatementInstance stmt, StatementMap chunk, EnhancedUnitGraph methodGraph, List<Region> allRegions, Region region) {
+    private static StatementInstance matchControlDom(StatementInstance stmt, LazyStatementMap lazyChunk, EnhancedUnitGraph methodGraph, List<Region> allRegions, Region region) {
         StatementInstance candidateIu = null;
         Unit first = region.getFirst();
         List<Unit> preds = methodGraph.getPredsOf(first);
         for (Unit pred : preds) {
-            candidateIu = compareUnits(stmt, chunk, pred);
+            candidateIu = compareUnits(stmt, lazyChunk, pred);
         }
         return candidateIu;
     }
 
-    private static StatementInstance compareUnits(StatementInstance stmt, StatementMap chunk, Unit unit) {
-        for (StatementInstance iu: chunk.values()) {
+    private static StatementInstance compareUnits(StatementInstance stmt, LazyStatementMap lazyChunk, Unit unit) {
+        for (StatementInstance iu: lazyChunk) {
             if (iu.getLineNo() > stmt.getLineNo()) {
                 continue;
             }

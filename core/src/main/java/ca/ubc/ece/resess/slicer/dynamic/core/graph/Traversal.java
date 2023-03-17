@@ -1,20 +1,17 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.graph;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.LazyStatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
+import com.kitfox.svg.A;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.AssignStmt;
@@ -60,8 +57,6 @@ public class Traversal {
         return following;
     }
 
-
-
     public StatementMap getChunk(StatementInstance iu) {
         StatementMap chunk;
         if (iu.isReturn()) {
@@ -85,31 +80,41 @@ public class Traversal {
         if (iu == null) {
             return null;
         }
-        String currentMethod = iu.getMethod().getSignature();
-        StatementMap chunk = new StatementMap();
-        boolean done = false;
-        int newPos = 0;
-        while(pos>=0 && !done) {
-            iu = icdg.mapNoUnits(pos);
-            if (iu!=null) {
-                if(iu.getMethod().getSignature().equals(currentMethod)) {
-                    chunk.put(iu.getUnitId(), iu);
-                } else {
-                    done = true;
-                }
-            }
-            newPos = previousFlowEdge(pos, newPos);
-            if (newPos != pos) {
-                pos = newPos;
-            } else {
-                done = true;
-            }
-        }
+        LazyStatementMap lazyChunk = new LazyStatementMap( iu, icdg, this::previousFlowEdge, analysisCache );
+        lazyChunk.buildInternalChunk();
+        StatementMap chunk = lazyChunk.getInternalChunk();
         analysisCache.putInBwChunkCache(startPos, chunk);
         return chunk;
     }
 
-    private int previousFlowEdge(int pos, int newPos) {
+    public LazyStatementMap getLazyChunk(StatementInstance iu) {
+        LazyStatementMap chunk=null;
+        if (iu.isReturn()) {
+            //chunk = iu.getReturnChunk();
+            if (chunk == null) {
+                chunk = getLazyChunk(iu.getLineNo());
+            }
+        } else {
+            chunk = getLazyChunk(iu.getLineNo());
+        }
+        return chunk;
+    }
+
+    public LazyStatementMap getLazyChunk(int pos) {
+        LazyStatementMap cachedChunk = analysisCache.getFromLazyChunkCache( pos );
+        if (cachedChunk != null) {
+            return cachedChunk;
+        }
+        StatementInstance iu = icdg.mapNoUnits( pos );
+        if (iu == null) {
+            return null;
+        }
+        LazyStatementMap lazyChunk = new LazyStatementMap( iu, icdg, this::previousFlowEdge, analysisCache );
+        return lazyChunk;
+    }
+
+    private int previousFlowEdge( int pos ) {
+        int newPos = pos;
         List<Integer> preds = icdg.predecessorListOf(pos);
         for (Integer pred: preds) {
             Edge e = icdg.getEdge(pred, pos);
@@ -307,7 +312,7 @@ public class Traversal {
     public int getFirstStmt (int pos) {
         int newPos = pos;
         while(pos>=0) {
-            newPos = previousFlowEdge(pos, newPos);
+            newPos = previousFlowEdge(pos);
             if (newPos != pos) {
                 pos = newPos;
             } else {
@@ -334,19 +339,20 @@ public class Traversal {
 
     public int getCaller (int pos) {
         int startPos = pos;
-        Integer cachedPos = analysisCache.getFromCallerCache(startPos);
-        if (cachedPos != null) {
-            return cachedPos;
-        }
         StatementInstance iu = icdg.mapNoUnits(pos);
         String currentMethod = iu.getMethod().getSignature();
         int newPos = pos;
         while(pos>=0) {
+            Integer cachedPos = analysisCache.getFromCallerCache(pos);
+            if (cachedPos != null) {
+                pos = cachedPos;
+                break;
+            }
             iu = icdg.mapNoUnits(pos);
             if (iu!=null && !iu.getMethod().getSignature().equals(currentMethod)) {
                 break;
             }
-            newPos = previousFlowEdge(pos, newPos);
+            newPos = previousFlowEdge(pos);
             if (newPos != pos) {
                 pos = newPos;
             } else {
