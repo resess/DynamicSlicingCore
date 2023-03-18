@@ -1,9 +1,6 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
@@ -38,7 +35,7 @@ public class SliceMethod {
     private boolean dataFlowsOnly = false;
     private boolean controlFlowOnly = false;
     private boolean sliceOnce = false;
-    private SlicingWorkingSet workingSet;
+    protected SlicingWorkingSet workingSet;
 
     public SliceMethod(DynamicControlFlowGraph icdg, boolean frameworkModel, boolean dataFlowsOnly, boolean controlFlowOnly, boolean sliceOnce, SlicingWorkingSet workingSet, AnalysisCache analysisCache) {
         this.icdg = icdg;
@@ -55,11 +52,9 @@ public class SliceMethod {
         }
     }
 
-    public DynamicSlice slice(StatementInstance start, Set<AccessPath> variables,
-                              HashMap<StatementInstance, Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>>> uniques) {
+    public DynamicSlice slice(StatementInstance start, Set<AccessPath> variables) {
         StatementInstance firstDom = null;
         StatementInstance dom = null;
-        //System.out.println("Variables set: " + variables.toString());
 
         if (variables.isEmpty()) {
             workingSet.addStmt(start, new Pair<>(start, new AccessPath(start.getLineNo(), AccessPath.NOT_DEFINED, start)), "data");
@@ -92,18 +87,13 @@ public class SliceMethod {
 
             StatementInstance stmt = p.getO1();
             AccessPath var = p.getO2();
-            if(uniques.containsKey(stmt)){
-                System.out.println("alr proc");
-                continue;
-            }
             if (AnalysisUtils.isAndroidMethod(stmt, var)) {
                 continue;
             }
 
             LazyStatementMap lazyChunk = traversal.getLazyChunk( stmt );
             AnalysisLogger.log(Constants.DEBUG, "Slicing on {}", p);
-            //System.out.println("Slicing on: " + p.toString());
-            //AnalysisLogger.log(Constants.DEBUG, "With chunk {}", chunk);
+
             if (!dataFlowsOnly) {
                 dom = getControlDependence(workingSet, p, stmt, lazyChunk);
                 AnalysisLogger.log(Constants.DEBUG, "Control-dom is {}", dom);
@@ -114,22 +104,20 @@ public class SliceMethod {
 
             StatementSet def = new StatementSet();
             AliasSet usedVars = new AliasSet();
-            int prevSize = workingSet.size();
 
             if (!controlFlowOnly) {
-                def = getDataDependence(workingSet, p, stmt, var, lazyChunk, def, usedVars, uniques);
+                def = getDataDependence(workingSet, p, stmt, var, lazyChunk, def, usedVars);
             }
-            //System.out.println("Used vars: " + usedVars.size());
             if (def != null && !def.isEmpty()) {
                 if (sliceOnce) {
                     def = new StatementSet(def.iterator().next());
                 }
                 addDataDependenceToWorkingSet(workingSet, p, var, def);
             }
-            //System.out.println("Working set add: " + (workingSet.size()-prevSize) + "\n");
+
             analysisCache.putInLazyChunkCache( stmt.getLineNo(), lazyChunk );
         }
-        //return workingSet.getDynamicSlice().traceOrder();
+
         return workingSet.getDynamicSlice();
     }
 
@@ -178,10 +166,9 @@ public class SliceMethod {
     }
 
     public StatementSet getDataDependence(SlicingWorkingSet workingSet, Pair<StatementInstance, AccessPath> p,
-            StatementInstance stmt, AccessPath var, LazyStatementMap lazyChunk, StatementSet def, AliasSet usedVars,
-                                          HashMap<StatementInstance, Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>>> uniques) {
+            StatementInstance stmt, AccessPath var, LazyStatementMap lazyChunk, StatementSet def, AliasSet usedVars) {
         if (var.getField().equals("")) {
-            def = localReachingDefLazy(stmt, var, lazyChunk, usedVars, frameworkModel, uniques);
+            def = localReachingDefLazy(stmt, var, lazyChunk, usedVars, frameworkModel);
             AnalysisLogger.log(Constants.DEBUG, "Local def {}", def);
         }
         if (!usedVars.isEmpty() && def != null) {
@@ -326,9 +313,9 @@ public class SliceMethod {
         return defSet;
     }
 
-    static HashMap<Pair<StatementInstance, String>, Pair<StatementSet, AliasSet>> processed = new HashMap<>();
-    public StatementSet localReachingDefLazy(StatementInstance iu, AccessPath ap, LazyStatementMap lazyChunk, AliasSet usedVars, boolean frameworkModel,
-                                             HashMap<StatementInstance, Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>>> uniques){
+    //static HashMap<Pair<StatementInstance, String>, Pair<StatementSet, AliasSet>> processed = new HashMap<>();
+    static HashSet<Pair<StatementInstance, String>> processed = new HashSet<>();
+    public StatementSet localReachingDefLazy(StatementInstance iu, AccessPath ap, LazyStatementMap lazyChunk, AliasSet usedVars, boolean frameworkModel){
         AnalysisLogger.log(Constants.DEBUG, "Getting localDefChanged at: {}", iu);
         Iterator<StatementInstance> lazyChunkIt = lazyChunk.iterator();
         StatementInstance firstInChunk = lazyChunkIt.next();
@@ -338,6 +325,7 @@ public class SliceMethod {
         if (ap.isEmpty()) {
             return defSet;
         }
+
         boolean localFound = false;
         StatementInstance prevUnit = null;
         while(lazyChunkIt.hasNext()){
@@ -345,16 +333,12 @@ public class SliceMethod {
             if(u == null){
                 break;
             }
-            if(workingSet.isVisited(u, ap)){
-                break;
-            }
             Pair<StatementInstance, String> curProcess = new Pair<>(u, ap.getBase().getO1());
-            if(processed.containsKey(curProcess)){
-                defSet.addAll(processed.get(curProcess).getO1());
-                usedVars.addAll(processed.get(curProcess).getO2());
-                break;
+            if(workingSet.isVisited(u, ap) || processed.contains(curProcess)){
+                // should do reachingInCaller(), but need to optimize that too
+                return defSet;
             }
-            //System.out.println("Traversing: " + u + "////" + ap);
+
             AnalysisLogger.log(Constants.DEBUG, "Inspecting: {}", u);
             if (localFound) {
                 break;
@@ -371,7 +355,6 @@ public class SliceMethod {
             for (ValueBox def: u.getUnit().getDefBoxes()) {
                 if(def.getValue() instanceof Local) {
                     if (ap.baseEquals(def.getValue().toString())) {
-                        //backwardDefVars.add(new Pair<>(u, new AccessPath(def.getValue().toString(), def.getValue().getType(), AccessPath.NOT_USED, u.getLineNo(), u)));
                         defSet.add(u);
                         localFound = true;
                         break;
@@ -379,14 +362,12 @@ public class SliceMethod {
                 } else if (def.getValue() instanceof FieldRef){
                     for (ValueBox vb: ((FieldRef) def.getValue()).getUseBoxes()){
                         if (ap.baseEquals(vb.getValue().toString())) {
-                            //backwardDefVars.add(new Pair<>(u, new AccessPath(def.getValue().toString(), def.getValue().getType(), AccessPath.NOT_USED, u.getLineNo(), u)));
                             defSet.add(u);
                         }
                     }
                 } else if (def.getValue() instanceof ArrayRef) {
                     Value v = ((ArrayRef) def.getValue()).getBase();
                     if (ap.baseEquals(v.toString())) {
-                        //backwardDefVars.add(new Pair<>(u, new AccessPath(def.getValue().toString(), def.getValue().getType(), AccessPath.NOT_USED, u.getLineNo(), u)));
                         defSet.add(u);
                     }
                 }
@@ -433,14 +414,15 @@ public class SliceMethod {
                 }
             }
             prevUnit = u;
-            processed.put(new Pair<>(u, ap.getBase().getO1()), new Pair<>(defSet, usedVars));
+            //processed.put(new Pair<>(u, ap.getBase().getO1()), new Pair<>(defSet, usedVars));
         }
         if (defSet.isEmpty()) {
             defSet.addAll(getReachingInCaller(iu, ap));
         }
         // defSet = localReachingDefForward(backwardDefVars, defSet);
         // AnalysisLogger.log(Constants.DEBUG, "Defs with forward are: {}", defSet);
-        processed.put(new Pair<>(iu, ap.getBase().getO1()), new Pair<>(defSet, usedVars));
+
+        processed.add(new Pair<>(iu, ap.getBase().getO1()));
         return defSet;
     }
 

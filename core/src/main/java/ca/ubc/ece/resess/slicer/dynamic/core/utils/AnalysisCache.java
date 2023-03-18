@@ -96,7 +96,7 @@ public class AnalysisCache {
     public synchronized void putInNextCallbackCache(StatementInstance k, AccessPath ap, Set<CallerContext> v){
         nextCallbackCache.put(new Pair<>(k, ap), v);
     }
-    
+
     public Integer getFromCallerCache(int pos) {
         return callerCache.get(pos);
     }

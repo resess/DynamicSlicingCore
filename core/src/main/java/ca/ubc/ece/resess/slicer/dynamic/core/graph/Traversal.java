@@ -9,7 +9,6 @@ import ca.ubc.ece.resess.slicer.dynamic.core.statements.LazyStatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
-import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import com.kitfox.svg.A;
 import soot.Unit;
@@ -335,24 +334,23 @@ public class Traversal {
         return pos;
     }
 
-
-
-    public int getCaller (int pos) {
+    public int getCaller(int pos) {
         int startPos = pos;
         StatementInstance iu = icdg.mapNoUnits(pos);
         String currentMethod = iu.getMethod().getSignature();
-        int newPos = pos;
+        ArrayList<Integer> traversed = new ArrayList<>();
         while(pos>=0) {
             Integer cachedPos = analysisCache.getFromCallerCache(pos);
             if (cachedPos != null) {
                 pos = cachedPos;
                 break;
             }
+            traversed.add(pos);
             iu = icdg.mapNoUnits(pos);
             if (iu!=null && !iu.getMethod().getSignature().equals(currentMethod)) {
                 break;
             }
-            newPos = previousFlowEdge(pos);
+            int newPos = previousFlowEdge(pos);
             if (newPos != pos) {
                 pos = newPos;
             } else {
@@ -360,8 +358,39 @@ public class Traversal {
                 break;
             }
         }
-        analysisCache.putInCallerCache(startPos, pos);
-        return pos;
+        int caller = pos;
+        for(int curPos : traversed){
+            analysisCache.putInCallerCache(curPos, caller);
+        }
+        return analysisCache.getFromCallerCache(startPos);
+    }
+
+    public int getCallerRecurse(int pos) {
+        StatementInstance iu = icdg.mapNoUnits(pos);
+        String currentMethod = iu.getMethod().getSignature();
+        return getCallerHelper( previousFlowEdge(pos), currentMethod );
+    }
+
+    public int getCallerHelper(int pos, String currentMethod) {
+        Integer cachedPos = analysisCache.getFromCallerCache(pos);
+        if (cachedPos != null) {
+            return cachedPos;
+        }
+        StatementInstance iu = icdg.mapNoUnits(pos);
+        if (iu!=null && !iu.getMethod().getSignature().equals(currentMethod)) {
+            analysisCache.putInCallerCache(pos, iu.getLineNo());
+            return iu.getLineNo();
+        }
+
+        int newPos = previousFlowEdge(pos);
+        int caller;
+        if (newPos != pos) {
+            caller = getCallerHelper(newPos, currentMethod);
+        } else {
+            caller = checkForCaller(pos);
+        }
+        analysisCache.putInCallerCache(pos, caller);
+        return caller;
     }
 
 

@@ -3,6 +3,7 @@ package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 
 import java.util.*;
 
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.EdgeType;
 import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -22,7 +23,11 @@ public class DynamicSlice
 
     private SimpleDirectedWeightedGraph<Integer, DefaultWeightedEdge> chopGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
     private Map<Integer, Integer> methodOfStatement = new LinkedHashMap<>();
-    private Set<Triple<Integer, Integer, String>> edgeTypes = new LinkedHashSet<>();
+    enum EdgeType {
+        data,
+        control
+    };
+    private Map<EdgeType, Set<Pair<Integer, Integer>>> edgeTypes = new HashMap<>();
     class OrderedSlice extends ArrayList<Pair<StatementInstance, AccessPath>> {
 
         private static final long serialVersionUID = 7286928364073066546L;
@@ -34,6 +39,9 @@ public class DynamicSlice
 
     public DynamicSlice(){
         super();
+        for(EdgeType e : EdgeType.values()){
+            edgeTypes.put(e, new HashSet<>());
+        }
         // String s = "";
         // for (StackTraceElement ste: Thread.currentThread().getStackTrace())  {
         //     s += ste.toString();
@@ -43,33 +51,32 @@ public class DynamicSlice
 
     public DynamicSlice(Collection<Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>>> collection){
         super( collection );
+        for(EdgeType e : EdgeType.values()){
+            edgeTypes.put(e, new HashSet<>());
+        }
     }
 
     public boolean hasEdge(Integer src, Integer dst, String edgeType) {
         // AnalysisLogger.log(true, "Checking edge: {}-{}-{}", src, dst, edgeType);
-        if (edgeTypes.contains(Triple.of(src, dst, edgeType))) {
-            // AnalysisLogger.log(true, "Found it!");
-            return true;
-        }
-        return false;
+        // AnalysisLogger.log(true, "Found it!");
+        return edgeTypes.get(EdgeType.valueOf(edgeType)).contains(new Pair<>(src, dst));
     }
 
     public String getEdges(Integer src, Integer dst) {
-        String edges = "";
-        if (edgeTypes.contains(Triple.of(src, dst, "data"))) {
-            edges += "data";
+        StringBuilder edges = new StringBuilder();
+        for(EdgeType e : EdgeType.values()){
+            if(edgeTypes.get(e).contains(new Pair<>(src, dst))){
+                edges.append(e.toString());
+            }
         }
-        if (edgeTypes.contains(Triple.of(src, dst, "control"))) {
-            edges += "control";
-        }
-        return edges;
+        return edges.toString();
     }
 
     public boolean add(Pair<StatementInstance, AccessPath> key,
             Pair<StatementInstance, AccessPath> value, String edgeType) {
-                edgeTypes.add(Triple.of(key.getO1().getLineNo(), value.getO1().getLineNo(), edgeType));
-                // AnalysisLogger.log(true, "Added edge: {}-{}-{}", key.getO1().getLineNo(), value.getO1().getLineNo(), edgeType);
-                return this.add(key, value);
+        edgeTypes.get(EdgeType.valueOf(edgeType)).add(new Pair<>(key.getO1().getLineNo(), value.getO1().getLineNo()));
+        // AnalysisLogger.log(true, "Added edge: {}-{}-{}", key.getO1().getLineNo(), value.getO1().getLineNo(), edgeType);
+        return this.add(key, value);
     }
 
     @Override
@@ -294,7 +301,7 @@ public class DynamicSlice
         }
 
         this.methodOfStatement.putAll(other.methodOfStatement);
-        this.edgeTypes.addAll(other.edgeTypes);
+        //this.edgeTypes.addAll(other.edgeTypes);
         return;
     }
 }
