@@ -212,29 +212,18 @@ public class SlicePrinter {
 
 
     public static void printSlices(DynamicSlice dynamicSlice) {
-        List<String> dynamicPrint = new ArrayList<>();
-        List<String> staticPrint = new ArrayList<>();
-        Set<String> staticSlice = new LinkedHashSet<>();
-        
+        AnalysisLogger.log(true, "Printing dynamic slice:");
+        for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: dynamicSlice) {
+            Pair<StatementInstance, AccessPath> iup = entry.getO1();
+            String toPrint = iup.toString() + "   from:" + entry.getO2();
+            AnalysisLogger.log(true, "{}", toPrint);
+        }
+        AnalysisLogger.log(true, "Printing static slice:");
         for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: dynamicSlice) {
             Pair<StatementInstance, AccessPath> iup = entry.getO1();
             StatementInstance iu = iup.getO1();
-            dynamicPrint.add(iup.toString());
-            dynamicPrint.add("   from:" + entry.getO2());
-            String toPrint = iu.getMethod().getSignature() + ":" + iu.getUnit().getJavaSourceStartLineNumber() + "-" + iu.getUnit().getJavaSourceStartColumnNumber() + ":" + iu.getUnit().toString(); 
-            if (!staticSlice.contains(toPrint)) {
-                staticSlice.add(toPrint);
-                staticPrint.add(toPrint);
-                staticPrint.add("   from:" + entry.getO2());
-            }
-        }
-        AnalysisLogger.log(true, "Printing dynamic slice:");
-        for (String s: dynamicPrint) {
-            AnalysisLogger.log(true, "{}", s);
-        }
-        AnalysisLogger.log(true, "Printing static slice:");
-        for (String s: staticPrint) {
-            AnalysisLogger.log(true, "{}", s);
+            String toPrint = iu.getMethod().getSignature() + ":" + iu.getUnit().getJavaSourceStartLineNumber() + "-" + iu.getUnit().getJavaSourceStartColumnNumber() + ":" + iu.getUnit().toString();
+            AnalysisLogger.log(true, "{}", toPrint + "   from:" + entry.getO2());
         }
     }
 
