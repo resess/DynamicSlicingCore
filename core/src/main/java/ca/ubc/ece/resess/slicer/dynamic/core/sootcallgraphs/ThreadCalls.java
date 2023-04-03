@@ -30,6 +30,7 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import soot.Body;
 import soot.Kind;
 import soot.Local;
+import soot.MethodSubSignature;
 import soot.PhaseOptions;
 import soot.RefType;
 import soot.Scene;
@@ -153,7 +154,7 @@ public class ThreadCalls {
       }
       receivers.add(receiver);
     }
-    sites.add(new VirtualCallSite(s, m, iie, subSig, kind));
+    sites.add(new VirtualCallSite(s, m, iie, new MethodSubSignature(subSig), kind));
   }
 
   private void processNewMethod(SootMethod m) {
