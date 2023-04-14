@@ -14,7 +14,6 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
-import jdk.nashorn.internal.codegen.CompilerConstants;
 import soot.Local;
 import soot.Value;
 import soot.ValueBox;

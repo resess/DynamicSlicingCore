@@ -136,13 +136,13 @@ public class ControlDominator{
 
     private static StatementInstance lineBeforeException(DynamicControlFlowGraph icdg, List<Unit> regionUnits, StatementInstance statementInstance) {
         StatementInstance prev = null;
-        Set<Unit> mustFind = new HashSet<>();
+        Set<String> mustFind = new HashSet<>();
         for (Unit u: regionUnits) {
             if (u.equals(statementInstance.getUnit())) {
                 break;
             }
             if (!u.toString().contains(":= @caughtexception")) {
-                mustFind.add(u);
+                mustFind.add(u.toString());
             }
         }
         int newPos = statementInstance.getLineNo();
@@ -152,8 +152,8 @@ public class ControlDominator{
             if ((prev!=null) && !((prev.getUnit()) instanceof GotoStmt)) {
                 if (mustFind.isEmpty()) {
                     return prev;
-                } else if (mustFind.contains(prev.getUnit())) {
-                    mustFind.remove(prev.getUnit());
+                } else if (mustFind.contains(prev.getUnit().toString())) {
+                    mustFind.remove(prev.getUnit().toString());
                 }
             }
             

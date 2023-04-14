@@ -15,7 +15,6 @@ import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementSet;
 import java.util.HashMap;
 
 
-import jdk.nashorn.internal.codegen.CompilerConstants;
 import soot.toolkits.scalar.Pair;
 
 public class AnalysisCache {
