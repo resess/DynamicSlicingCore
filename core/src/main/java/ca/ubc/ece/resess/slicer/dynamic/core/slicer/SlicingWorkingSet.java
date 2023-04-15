@@ -38,7 +38,8 @@ public class SlicingWorkingSet extends ArrayDeque<Pair<StatementInstance, Access
         this.stopSlicing = stopSlicing;
     }
 
-    public DynamicSlice getDynamicSlice() {
+    public DynamicSlice
+    getDynamicSlice() {
         return dynamicSlice;
     }
 

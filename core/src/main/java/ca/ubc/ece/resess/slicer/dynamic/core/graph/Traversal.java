@@ -79,9 +79,26 @@ public class Traversal {
         if (iu == null) {
             return null;
         }
-        LazyStatementMap lazyChunk = new LazyStatementMap( iu, icdg, this::previousFlowEdge, analysisCache );
-        lazyChunk.buildInternalChunk();
-        StatementMap chunk = lazyChunk.getInternalChunk();
+        String currentMethod = iu.getMethod().getSignature();
+        StatementMap chunk = new StatementMap();
+        boolean done = false;
+        int newPos = 0;
+        while(pos>=0 && !done) {
+            iu = icdg.mapNoUnits(pos);
+            if (iu!=null) {
+                if(iu.getMethod().getSignature().equals(currentMethod)) {
+                    chunk.put(iu.getUnitId(), iu);
+                } else {
+                    done = true;
+                }
+            }
+            newPos = previousFlowEdge(pos);
+            if (newPos != pos) {
+                pos = newPos;
+            } else {
+                done = true;
+            }
+        }
         analysisCache.putInBwChunkCache(startPos, chunk);
         return chunk;
     }
@@ -89,9 +106,11 @@ public class Traversal {
     public LazyStatementMap getLazyChunk(StatementInstance iu) {
         LazyStatementMap chunk=null;
         if (iu.isReturn()) {
-            //chunk = iu.getReturnChunk();
-            if (chunk == null) {
+            StatementMap retChunk = iu.getReturnChunk();
+            if (retChunk == null) {
                 chunk = getLazyChunk(iu.getLineNo());
+            } else {
+                chunk = new LazyStatementMap(retChunk);
             }
         } else {
             chunk = getLazyChunk(iu.getLineNo());

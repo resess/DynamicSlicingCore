@@ -123,6 +123,9 @@ public class ControlDominator{
 
     private static StatementInstance compareUnits(StatementInstance stmt, LazyStatementMap lazyChunk, Unit unit) {
         for (StatementInstance iu: lazyChunk) {
+            if(iu == null){
+                return null;
+            }
             if (iu.getLineNo() > stmt.getLineNo()) {
                 continue;
             }

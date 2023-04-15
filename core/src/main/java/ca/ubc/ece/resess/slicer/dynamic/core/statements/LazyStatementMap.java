@@ -1,8 +1,6 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.statements;
 
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.DynamicControlFlowGraph;
-import ca.ubc.ece.resess.slicer.dynamic.core.graph.Edge;
-import ca.ubc.ece.resess.slicer.dynamic.core.graph.EdgeType;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 
 import java.util.*;
@@ -24,6 +22,10 @@ public class LazyStatementMap implements Iterable<StatementInstance> {
         this.icdg = icdg;
         this.nextEdgeFunction = nextEdgeFunction;
         this.analysisCache = analysisCache;
+    }
+
+    public LazyStatementMap(StatementMap builtChunk){
+        this.internalChunk = builtChunk;
     }
 
     public StatementMap getInternalChunk(){
@@ -80,6 +82,9 @@ public class LazyStatementMap implements Iterable<StatementInstance> {
                 StatementInstance nextStatement = null;
                 if(curChunkIndex >= curTraverse.getInternalChunk().size()){
                     // have to build more
+                    if(nextEdgeFunction == null){
+                        return null;
+                    }
                     nextStatement = buildAndNext();
                     curChunkIndex = curTraverse.getInternalChunk().size();
                     if(nextStatement == null){
@@ -93,7 +98,7 @@ public class LazyStatementMap implements Iterable<StatementInstance> {
                     curChunkIndex++;
                     curPos = nextStatement.getLineNo();
                 }
-                if(curChunkIndex == curTraverse.getInternalChunk().size()){
+                if(curChunkIndex == curTraverse.getInternalChunk().size() && nextEdgeFunction != null){
                     // try cache
                     nextPos();
                     LazyStatementMap cached = analysisCache.getFromLazyChunkCache( curPos );

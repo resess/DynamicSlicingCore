@@ -105,6 +105,9 @@ public class SliceMethod {
             AliasSet usedVars = new AliasSet();
 
             if (!controlFlowOnly) {
+                if(stmt.isReturn()){
+                    lazyChunk = new LazyStatementMap(lazyChunk.getInternalChunk().reverseTraceOrder(stmt));
+                }
                 def = getDataDependence(workingSet, p, stmt, var, lazyChunk, def, usedVars);
             }
             if (def != null && !def.isEmpty()) {
@@ -130,9 +133,9 @@ public class SliceMethod {
                 }
                 AnalysisLogger.log(Constants.DEBUG && !def.contains(iu), "Return def {}\n", iu);
                 if (retPair != null) {
-                    if(iu.getLineNo() == retPair.getO2().getUsedLine()){
+                    //if(iu.getLineNo() == retPair.getO2().getUsedLine()){
                         workingSet.add(iu, retPair.getO2(), p, "data");
-                    }
+                    //}
                 } else {
                     workingSet.addStmt(iu, p, "data");
                     if (var.getField().equals("")) {
@@ -148,18 +151,18 @@ public class SliceMethod {
             if (fieldDef.getValue() instanceof FieldRef){
                 for (ValueBox vb: ((FieldRef) fieldDef.getValue()).getUseBoxes()){
                     if (p.getO2().baseEquals(vb.getValue().toString())) {
-                        if(iu.getLineNo() == p.getO2().getUsedLine()){
+                        //if(iu.getLineNo() == p.getO2().getUsedLine()){
                             workingSet.add(iu, p.getO2(), p, "data");
-                        }
+                        //}
                     }
                 }
             }
         }
         if (iu.getCalledMethod()!=null && iu.getCalledMethod().getSignature().equals("<java.lang.Object: void <init>()>")) {
             if (((InstanceInvokeExpr) ((Stmt) iu.getUnit()).getInvokeExpr()).getBaseBox().toString().equals(p.getO2().getPathString())) {
-                if(iu.getLineNo() == p.getO2().getUsedLine()){
+                //if(iu.getLineNo() == p.getO2().getUsedLine()){
                     workingSet.add(iu, p.getO2(), p, "data");
-                }
+                //}
             }
         }
     }
@@ -173,9 +176,9 @@ public class SliceMethod {
         if (!usedVars.isEmpty() && def != null) {
             for (StatementInstance iu: def) {
                 for (AccessPath usedVar: usedVars) {
-                    if(iu.getLineNo() == usedVar.getUsedLine()){
+                    //if(iu.getLineNo() == usedVar.getUsedLine()){
                         workingSet.add(iu, usedVar, p, "data");
-                    }
+                    //}
                 }
             }
         }
@@ -225,6 +228,8 @@ public class SliceMethod {
         boolean localFound = false;
         StatementInstance prevUnit = null;
         for (StatementInstance u: chunk.values()) {
+            if(u.getLineNo() == iu.getLineNo())
+                continue;
             AnalysisLogger.log(Constants.DEBUG, "Inspecting: {}", u);
             if (localFound) {
                 break;
@@ -325,10 +330,14 @@ public class SliceMethod {
             return defSet;
         }
 
+        lazyChunkIt = lazyChunk.iterator();
         boolean localFound = false;
         StatementInstance prevUnit = null;
         while(lazyChunkIt.hasNext()){
             StatementInstance u = lazyChunkIt.next();
+            if(u == iu){
+                continue;
+            }
             if(u == null){
                 break;
             }
@@ -491,7 +500,7 @@ public class SliceMethod {
         LazyStatementMap callerChunk = traversal.getLazyChunk(callerPos);
         for (StatementInstance u: callerChunk) {
             if(u == null){
-                return null;
+                return defSet;
             }
             if (u.getLineNo()==callerPos) {
                 nextCaller = u;
