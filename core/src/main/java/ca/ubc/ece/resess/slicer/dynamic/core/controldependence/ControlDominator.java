@@ -1,5 +1,6 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.controldependence;
 
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,18 +16,13 @@ import soot.toolkits.graph.pdg.RegionAnalysis;
 import soot.SootMethod;
 import soot.Unit;
 import soot.jimple.GotoStmt;
-
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import soot.toolkits.scalar.Pair;
 
 
 public class ControlDominator{
 
     static Set<SootMethod> outOfMemMethods = new LinkedHashSet<>();
+    static Map<SootMethod, RegionAnalysis> computedRegions = new LinkedHashMap<>();
     static Map<SootMethod, EnhancedUnitGraph> computedGraphs = new LinkedHashMap<>();
     private ControlDominator() {
         throw new IllegalStateException("Utility class");
@@ -77,24 +73,38 @@ public class ControlDominator{
     }
 
 
+    static HashMap<Region, Boolean> exceptionRegions = new HashMap<>();
     private static StatementInstance getControlDom(StatementInstance stmt, LazyStatementMap lazyChunk, DynamicControlFlowGraph icdg) {
         StatementInstance candidateIu = null;
         try {
             EnhancedUnitGraph cug;
+            RegionAnalysis ra;
             if (computedGraphs.containsKey(stmt.getMethod())) {
                 cug = computedGraphs.get(stmt.getMethod());
+                ra = computedRegions.get(stmt.getMethod());
             } else {
                 cug = new EnhancedUnitGraph(stmt.getMethod().getActiveBody());
+                ra = new RegionAnalysis(cug, stmt.getMethod(), stmt.getMethod().getDeclaringClass());
                 computedGraphs.put(stmt.getMethod(), cug);
+                computedRegions.put(stmt.getMethod(), ra);
             }
             
             // AnalysisLogger.warn(true, "Graph: {}", cug);
             // HashMutablePDG pdg = new HashMutablePDG(new ExceptionalUnitGraph(stmt.getMethod().getActiveBody()));
-            RegionAnalysis ra = new RegionAnalysis(cug, stmt.getMethod(), stmt.getMethod().getDeclaringClass());
             for(Region r: ra.getRegions()) {
                 List<Unit> regionUnits = r.getUnits();
                 if (regionUnits.contains(stmt.getUnit())) {
-                    if (regionUnits.toString().contains(":= @caughtexception") || regionUnits.toString().contains("goto [?= throw")) {
+                    if(!exceptionRegions.containsKey(r)) {
+                        if (regionUnits.toString().contains(":= @caughtexception") || regionUnits.toString().contains("goto [?= throw")) {
+                            exceptionRegions.put(r, true);
+                            candidateIu = lineBeforeException(icdg, regionUnits, stmt);
+                        } else {
+                            exceptionRegions.put(r, false);
+                            candidateIu = matchControlDom(stmt, lazyChunk, cug, ra.getRegions(), r);
+                        }
+                        continue;
+                    }
+                    if(exceptionRegions.get(r)){
                         candidateIu = lineBeforeException(icdg, regionUnits, stmt);
                     } else {
                         candidateIu = matchControlDom(stmt, lazyChunk, cug, ra.getRegions(), r);
@@ -117,18 +127,27 @@ public class ControlDominator{
         List<Unit> preds = methodGraph.getPredsOf(first);
         for (Unit pred : preds) {
             candidateIu = compareUnits(stmt, lazyChunk, pred);
+            if(candidateIu != null){
+                return candidateIu;
+            }
         }
-        return candidateIu;
+        return null;
     }
 
+    static HashSet<Pair<StatementInstance, Unit>> processedDoms = new HashSet<>();
     private static StatementInstance compareUnits(StatementInstance stmt, LazyStatementMap lazyChunk, Unit unit) {
         for (StatementInstance iu: lazyChunk) {
             if(iu == null){
                 return null;
             }
+            Pair<StatementInstance, Unit> curPair = new Pair<>(iu, unit);
             if (iu.getLineNo() > stmt.getLineNo()) {
                 continue;
             }
+            if(processedDoms.contains(curPair)){
+                return null;
+            }
+            processedDoms.add(curPair);
             if (iu.getUnit().equals(unit)) {
                 return iu;
             }
@@ -145,7 +164,9 @@ public class ControlDominator{
                 break;
             }
             if (!u.toString().contains(":= @caughtexception")) {
-                mustFind.add(u.toString());
+                String unitString = u.toString() + "::" + u.getJavaSourceStartLineNumber();
+                //String unitString = u.toString();
+                mustFind.add(unitString);
             }
         }
         int newPos = statementInstance.getLineNo();
@@ -153,10 +174,12 @@ public class ControlDominator{
             newPos--;
             prev = icdg.mapNoUnits(newPos);
             if ((prev!=null) && !((prev.getUnit()) instanceof GotoStmt)) {
+                String unitString = prev.getUnit().toString() + "::" + prev.getJavaSourceLineNo();
+                //String unitString = prev.getUnit().toString();
                 if (mustFind.isEmpty()) {
                     return prev;
-                } else if (mustFind.contains(prev.getUnit().toString())) {
-                    mustFind.remove(prev.getUnit().toString());
+                } else if (mustFind.contains(unitString)) {
+                    mustFind.remove(unitString);
                 }
             }
             

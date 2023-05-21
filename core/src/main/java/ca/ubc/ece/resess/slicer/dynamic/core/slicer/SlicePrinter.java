@@ -246,7 +246,8 @@ public class SlicePrinter {
         printList.add("ID, Method, Class, Line, Source, Var");
         for (Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> elem : dynamicSlice) {
             StatementInstance iu = elem.getO1().getO1();
-            int id = dynamicSlice.getOrder(elem.getO1());
+            //int id = dynamicSlice.getOrder(elem.getO1());
+            int id = -1;
             String method = iu.getMethod().getSubSignature().replace(',', ';');
             String clString = iu.getMethod().getDeclaringClass().getName().replace(',', ';');
             String sourceLineNo = getSourceLineNumber(iu);
@@ -255,7 +256,8 @@ public class SlicePrinter {
             if (!lines.contains(line)) {
                 lines.add(line);
                 Pair<StatementInstance, AccessPath> source = elem.getO2();
-                int sourceId = dynamicSlice.getOrder(source);
+                //int sourceId = dynamicSlice.getOrder(source);
+                int sourceId = -1;
                 String toPrint = String.valueOf(id) + ", " + line + ", " + sourceLineNo + ", " + sourceId + ", " + source.getO2().toString();
                 printList.add(toPrint);
             }

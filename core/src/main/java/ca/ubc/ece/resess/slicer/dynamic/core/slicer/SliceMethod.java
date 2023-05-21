@@ -14,6 +14,7 @@ import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
+import com.kitfox.svg.A;
 import soot.Local;
 import soot.Value;
 import soot.ValueBox;
@@ -105,14 +106,11 @@ public class SliceMethod {
             AliasSet usedVars = new AliasSet();
 
             if (!controlFlowOnly) {
-                if(stmt.isReturn()){
-                    lazyChunk = new LazyStatementMap(lazyChunk.getInternalChunk().reverseTraceOrder(stmt));
-                }
                 def = getDataDependence(workingSet, p, stmt, var, lazyChunk, def, usedVars);
             }
             if (def != null && !def.isEmpty()) {
                 if (sliceOnce) {
-                    def = new StatementSet(def.iterator().next());
+                    def = new StatementSet(def.getLargestStatement());
                 }
                 addDataDependenceToWorkingSet(workingSet, p, var, def);
             }
@@ -133,9 +131,9 @@ public class SliceMethod {
                 }
                 AnalysisLogger.log(Constants.DEBUG && !def.contains(iu), "Return def {}\n", iu);
                 if (retPair != null) {
-                    //if(iu.getLineNo() == retPair.getO2().getUsedLine()){
+                    if(retPair.getO2().isUsedIn(iu)) {
                         workingSet.add(iu, retPair.getO2(), p, "data");
-                    //}
+                    }
                 } else {
                     workingSet.addStmt(iu, p, "data");
                     if (var.getField().equals("")) {
@@ -151,18 +149,14 @@ public class SliceMethod {
             if (fieldDef.getValue() instanceof FieldRef){
                 for (ValueBox vb: ((FieldRef) fieldDef.getValue()).getUseBoxes()){
                     if (p.getO2().baseEquals(vb.getValue().toString())) {
-                        //if(iu.getLineNo() == p.getO2().getUsedLine()){
-                            workingSet.add(iu, p.getO2(), p, "data");
-                        //}
+                        workingSet.add(iu, p.getO2(), p, "data");
                     }
                 }
             }
         }
         if (iu.getCalledMethod()!=null && iu.getCalledMethod().getSignature().equals("<java.lang.Object: void <init>()>")) {
             if (((InstanceInvokeExpr) ((Stmt) iu.getUnit()).getInvokeExpr()).getBaseBox().toString().equals(p.getO2().getPathString())) {
-                //if(iu.getLineNo() == p.getO2().getUsedLine()){
-                    workingSet.add(iu, p.getO2(), p, "data");
-                //}
+                workingSet.add(iu, p.getO2(), p, "data");
             }
         }
     }
@@ -170,15 +164,16 @@ public class SliceMethod {
     public StatementSet getDataDependence(SlicingWorkingSet workingSet, Pair<StatementInstance, AccessPath> p,
             StatementInstance stmt, AccessPath var, LazyStatementMap lazyChunk, StatementSet def, AliasSet usedVars) {
         if (var.getField().equals("")) {
-            def = localReachingDefLazy(stmt, var, lazyChunk, usedVars, frameworkModel);
+            //def = localReachingDefLazy(stmt, var, lazyChunk, usedVars, frameworkModel);
+            def = localReachingDefLazyCached(stmt, var, lazyChunk, usedVars, frameworkModel);
             AnalysisLogger.log(Constants.DEBUG, "Local def {}", def);
         }
         if (!usedVars.isEmpty() && def != null) {
             for (StatementInstance iu: def) {
                 for (AccessPath usedVar: usedVars) {
-                    //if(iu.getLineNo() == usedVar.getUsedLine()){
+                    if(usedVar.isUsedIn(iu)){
                         workingSet.add(iu, usedVar, p, "data");
-                    //}
+                    }
                 }
             }
         }
@@ -216,10 +211,11 @@ public class SliceMethod {
 
     public StatementSet localReachingDef(StatementInstance iu, AccessPath ap, StatementMap chunk,
                                          AliasSet usedVars, boolean frameworkModel){
-        AnalysisLogger.log(Constants.DEBUG, "Getting localDefChanged at: {}", iu);
+        AnalysisLogger.log(Constants.DEBUG, "Getting localDef at: {}", iu);
+        AnalysisLogger.log(Constants.DEBUG, "with ap: {}", ap);
         StatementInstance caller = icdg.mapNoUnits(traversal.getCaller(chunk.values().iterator().next().getLineNo()));
         StatementSet defSet = new StatementSet();
-        StatementSet defsInCalled = null;
+        StatementSet defsInCalled = new StatementSet();
         if (ap.isEmpty() || chunk == null) {
             return defSet;
         }
@@ -231,82 +227,18 @@ public class SliceMethod {
             if(u.getLineNo() == iu.getLineNo())
                 continue;
             AnalysisLogger.log(Constants.DEBUG, "Inspecting: {}", u);
+//            Pair<StatementInstance, String> curProcess = new Pair<>(u, ap.getBase().getO1());
+//            if(workingSet.isVisited(u, ap) || processed.containsKey(curProcess)){
+//                // should do reachingInCaller(), but need to optimize that too
+//                return defSet;
+//            }
             if (localFound) {
                 break;
             }
             if (u.getLineNo() >= iu.getLineNo() || u.getUnit()==null) {
                 continue;
             }
-            if (u.isReturn()) {
-                if (caller.getCalledMethod().getSignature().equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.Object)>")) {
-                    defSet.add(u);
-                    defSet.add(caller);
-                }
-            }
-            for (ValueBox def: u.getUnit().getDefBoxes()) {
-                if(def.getValue() instanceof Local) {
-                    if (ap.baseEquals(def.getValue().toString())) {
-                        backwardDefVars.add(new Pair<>(u, new AccessPath(def.getValue().toString(), def.getValue().getType(), AccessPath.NOT_USED, u.getLineNo(), u)));
-                        defSet.add(u);
-                        localFound = true;
-                        break;
-                    }
-                } else if (def.getValue() instanceof FieldRef){
-                    for (ValueBox vb: ((FieldRef) def.getValue()).getUseBoxes()){
-                        if (ap.baseEquals(vb.getValue().toString())) {
-                            backwardDefVars.add(new Pair<>(u, new AccessPath(def.getValue().toString(), def.getValue().getType(), AccessPath.NOT_USED, u.getLineNo(), u)));
-                            defSet.add(u);
-                        }
-                    }
-                } else if (def.getValue() instanceof ArrayRef) {
-                    Value v = ((ArrayRef) def.getValue()).getBase();
-                    if (ap.baseEquals(v.toString())) {
-                        backwardDefVars.add(new Pair<>(u, new AccessPath(def.getValue().toString(), def.getValue().getType(), AccessPath.NOT_USED, u.getLineNo(), u)));
-                        defSet.add(u);
-                    }
-                }
-            }
-            if (u.getUnit() instanceof AssignStmt) {
-                Value right = ((AssignStmt) u.getUnit()).getRightOp();
-                if (right instanceof FieldRef) {
-                    for (ValueBox vb: ((FieldRef) right).getUseBoxes()){
-                        if (ap.baseEquals(vb.getValue().toString())) {
-                            if (prevUnit != null && frameworkModel && traversal.isFrameworkMethod(prevUnit)) {
-                                Value left = ((AssignStmt) u.getUnit()).getLeftOp();
-                                AccessPath leftAp = new AccessPath(left.toString(), left.getType(), AccessPath.NOT_USED, u.getLineNo(), u);
-                                if (FrameworkModel.localWrapper(prevUnit, leftAp, defSet, usedVars)) {
-                                    // pass
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            InvokeExpr invokeExpr = AnalysisUtils.getCallerExp(u);
-            AnalysisLogger.log(Constants.DEBUG, "Invoke expr {}", invokeExpr);
-            if (invokeExpr != null) {
-                if (!traversal.isFrameworkMethod(u)) {
-                    if (! (((Stmt) u.getUnit()) instanceof AssignStmt)) {
-                        if (invokeExpr != null && !invokeExpr.getMethod().isStatic()) {
-                            if (ap.baseEquals(((InstanceInvokeExpr) invokeExpr).getBase().toString())){
-                                defSet.add(u);
-                            }
-                        }
-                    }
-                } else if (frameworkModel) {
-                    if (FrameworkModel.localWrapper(u, ap, defSet, usedVars)) {
-                        // pass
-                    }
-                }
-            }
-            if (invokeExpr != null && !traversal.isFrameworkMethod(u) && defsInCalled == null) {
-                AliasSet aliasesInCalled = traversal.changeScopeToCalled(u, new AliasSet(ap)).getO1();
-                for (AccessPath varInCalled: aliasesInCalled) {
-                    StatementMap calledChunk = traversal.getCalledChunk(u.getLineNo()).getChunk();
-                    defsInCalled = localReachingDef(iu, varInCalled, calledChunk, usedVars, frameworkModel);
-                    defSet.addAll(defsInCalled);
-                }
-            }
+            localFound = findLocalDef(iu, ap, defSet, caller, u, usedVars, defsInCalled);
             prevUnit = u;
         }
         if (defSet.isEmpty()) {
@@ -318,14 +250,18 @@ public class SliceMethod {
     }
 
     //static HashMap<Pair<StatementInstance, String>, Pair<StatementSet, AliasSet>> processed = new HashMap<>();
-    static HashSet<Pair<StatementInstance, String>> processed = new HashSet<>();
-    public StatementSet localReachingDefLazy(StatementInstance iu, AccessPath ap, LazyStatementMap lazyChunk, AliasSet usedVars, boolean frameworkModel){
+    protected static HashMap<Pair<StatementInstance, String>, Pair<StatementSet, AliasSet>> processed = new HashMap<>();
+    public StatementSet localReachingDefLazyCached(StatementInstance iu, AccessPath ap, LazyStatementMap lazyChunk, AliasSet usedVars, boolean frameworkModel){
         AnalysisLogger.log(Constants.DEBUG, "Getting localDefChanged at: {}", iu);
+        AnalysisLogger.log(Constants.DEBUG, "with ap: {}", ap);
         Iterator<StatementInstance> lazyChunkIt = lazyChunk.iterator();
         StatementInstance firstInChunk = lazyChunkIt.next();
-        StatementInstance caller = icdg.mapNoUnits(traversal.getCaller(firstInChunk.getLineNo()));
         StatementSet defSet = new StatementSet();
-        StatementSet defsInCalled = null;
+        if(firstInChunk == null){
+            return defSet;
+        }
+        StatementInstance caller = icdg.mapNoUnits(traversal.getCaller(firstInChunk.getLineNo()));
+        StatementSet defsInCalled = new StatementSet();
         if (ap.isEmpty()) {
             return defSet;
         }
@@ -333,6 +269,7 @@ public class SliceMethod {
         lazyChunkIt = lazyChunk.iterator();
         boolean localFound = false;
         StatementInstance prevUnit = null;
+        HashMap<StatementInstance, StatementSet> localDefs = new HashMap<>();
         while(lazyChunkIt.hasNext()){
             StatementInstance u = lazyChunkIt.next();
             if(u == iu){
@@ -341,12 +278,6 @@ public class SliceMethod {
             if(u == null){
                 break;
             }
-            Pair<StatementInstance, String> curProcess = new Pair<>(u, ap.getBase().getO1());
-            if(workingSet.isVisited(u, ap) || processed.contains(curProcess)){
-                // should do reachingInCaller(), but need to optimize that too
-                return defSet;
-            }
-
             AnalysisLogger.log(Constants.DEBUG, "Inspecting: {}", u);
             if (localFound) {
                 break;
@@ -354,84 +285,234 @@ public class SliceMethod {
             if (u.getLineNo() >= iu.getLineNo() || u.getUnit()==null) {
                 continue;
             }
-            if (u.isReturn()) {
-                if (caller.getCalledMethod().getSignature().equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.Object)>")) {
+            StatementSet localDefSet = new StatementSet();
+            localFound = findLocalDef(iu, ap, localDefSet, caller, u, usedVars, defsInCalled);
+
+            localDefs.put(u, localDefSet);
+            prevUnit = u;
+
+            Pair<StatementInstance, String> curProcess = new Pair<>(u, ap.getBase().getO1());
+            if(processed.containsKey(curProcess)){
+                localFound = true;
+                break;
+                //return defSet;
+//                defSet.addAll(processed.get(curProcess).getO1());
+//                usedVars.addAll(processed.get(curProcess).getO2());
+            }
+        }
+        if (defSet.isEmpty() && !localFound) {
+            //defSet.addAll(getReachingInCaller(iu, ap));
+            defSet.addAll(getReachingInCallerNew(iu, ap));
+        }
+
+        for (StatementInstance stmt : localDefs.keySet()){
+            Pair<StatementInstance, String> curProcess = new Pair<>(stmt, ap.getBase().getO1());
+            if(!processed.containsKey(curProcess)){
+                processed.put(curProcess, new Pair<>(defSet, usedVars));
+            }
+            defSet.addAll(localDefs.get(stmt));
+        }
+        return defSet;
+    }
+
+    public StatementSet localReachingDefLazy(StatementInstance iu, AccessPath ap, LazyStatementMap lazyChunk, AliasSet usedVars, boolean frameworkModel){
+        AnalysisLogger.log(Constants.DEBUG, "Getting localDefChanged at: {}", iu);
+        AnalysisLogger.log(Constants.DEBUG, "with ap: {}", ap);
+        Iterator<StatementInstance> lazyChunkIt = lazyChunk.iterator();
+        StatementInstance firstInChunk = lazyChunkIt.next();
+        StatementSet defSet = new StatementSet();
+        if(firstInChunk == null){
+            return defSet;
+        }
+        StatementInstance caller = icdg.mapNoUnits(traversal.getCaller(firstInChunk.getLineNo()));
+        StatementSet defsInCalled = new StatementSet();
+        if (ap.isEmpty()) {
+            return defSet;
+        }
+
+        lazyChunkIt = lazyChunk.iterator();
+        boolean localFound = false;
+        StatementInstance prevUnit = null;
+        HashMap<StatementInstance, StatementSet> localDefs = new HashMap<>();
+        while(lazyChunkIt.hasNext()){
+            StatementInstance u = lazyChunkIt.next();
+            if(u == iu){
+                continue;
+            }
+            if(u == null){
+                break;
+            }
+            AnalysisLogger.log(Constants.DEBUG, "Inspecting: {}", u);
+            if (localFound) {
+                break;
+            }
+            if (u.getLineNo() >= iu.getLineNo() || u.getUnit()==null) {
+                continue;
+            }
+            StatementSet localDefSet = new StatementSet();
+            localFound = findLocalDef(iu, ap, localDefSet, caller, u, usedVars, defsInCalled);
+            localDefs.put(u, localDefSet);
+            prevUnit = u;
+        }
+        if (defSet.isEmpty() && !localFound) {
+            defSet.addAll(getReachingInCaller(iu, ap));
+        }
+
+        for (StatementInstance stmt : localDefs.keySet()){
+            defSet.addAll(localDefs.get(stmt));
+        }
+        return defSet;
+    }
+
+//    protected static HashMap<String, StatementList> foundDefs = new HashMap<>();
+//    public void localReachingDefPrecomp(AccessPath ap) {
+//        AnalysisLogger.log(Constants.DEBUG, "Performing precomp");
+//        int pos = (int) 0;
+//        StatementInstance possibleIu = null;
+//        StatementList defs = new StatementList();
+//        AliasSet aliasSet = new AliasSet();
+//        aliasSet.add(ap);
+//        while (pos <= icdg.getLastLine()) {
+//            possibleIu = icdg.mapNoUnits(pos);
+//            AnalysisLogger.log(Constants.DEBUG, "Precomp for {}", possibleIu);
+//            if (possibleIu == null || possibleIu.getUnit() == null) {
+//                pos++;
+//                continue;
+//            }
+//            for(AccessPath var : aliasSet){
+//                StatementSet defSet = new StatementSet();
+//                AliasSet usedVars = new AliasSet();
+//                boolean localDef = findLocalDef(possibleIu, var, defSet,
+//                        icdg.mapNoUnits(traversal.getCaller(pos)), possibleIu, icdg.mapNoUnits(traversal.nextFlowEdge(pos)), usedVars, null);
+//                AnalysisLogger.log(Constants.DEBUG, "found defs = {}", defSet);
+//                defs.addAll(defSet);
+//            }
+//
+//            InvokeExpr invokeExpr = AnalysisUtils.getCallerExp(possibleIu);
+//            if (invokeExpr != null && !traversal.isFrameworkMethod(possibleIu)) {
+//                AliasSet aliasesInCalled = traversal.changeScopeToCalled(possibleIu, new AliasSet(ap)).getO1();
+//                aliasSet.addAll(aliasesInCalled);
+//            }
+//            pos++;
+//        }
+//        for(AccessPath var : aliasSet){
+//            foundDefs.put(var.getBase().getO1(), defs);
+//        }
+//    }
+//    public StatementSet localReachingDefNew(StatementInstance iu, AccessPath ap, LazyStatementMap lazyChunk, AliasSet usedVars, boolean frameworkModel){
+//        AnalysisLogger.log(Constants.DEBUG, "Getting localDefNew at: {}", iu);
+//        AnalysisLogger.log(Constants.DEBUG, "with ap: {}", ap);
+//        StatementSet ret = new StatementSet();
+//        if(ap.isEmpty()){
+//            return ret;
+//        }
+//        String fieldName = ap.getBase().getO1();
+//        if(!foundDefs.containsKey(fieldName)){
+//            localReachingDefPrecomp(ap);
+//        }
+//
+//        StatementList defs = foundDefs.get(fieldName);
+//        int start = defs.getClosestStatementIndex(iu);
+//        boolean localFound = false;
+//        for(int i=start; i>=0; i--){
+//            if(localFound){
+//                break;
+//            }
+//            StatementInstance def = defs.get(i);
+//            ret.add(def);
+//            for (ValueBox vBox: def.getUnit().getDefBoxes()) {
+//                if (vBox.getValue() instanceof Local) {
+//                    if (ap.baseEquals(vBox.getValue().toString())) {
+//                        localFound = true;
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//
+//        AnalysisLogger.log(Constants.DEBUG, "Found def: {}", ret);
+//        return ret;
+//    }
+
+    private boolean findLocalDef(StatementInstance iu, AccessPath ap, StatementSet defSet, StatementInstance caller,
+                                 StatementInstance u, AliasSet usedVars,
+                                 StatementSet defsInCalled) {
+        boolean localFound = false;
+        StatementInstance prevUnit = icdg.mapNoUnits(traversal.nextFlowEdge(u.getLineNo()));
+        if (u.isReturn()) {
+            if (caller.getCalledMethod() != null && caller.getCalledMethod().getSignature().equals("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.Object)>")) {
+                defSet.add(u);
+                defSet.add(caller);
+            }
+        }
+        for (ValueBox def: u.getUnit().getDefBoxes()) {
+            if(def.getValue() instanceof Local) {
+                if (ap.baseEquals(def.getValue().toString())) {
                     defSet.add(u);
-                    defSet.add(caller);
+                    localFound = true;
+                    break;
+                }
+            } else if (def.getValue() instanceof FieldRef){
+                for (ValueBox vb: ((FieldRef) def.getValue()).getUseBoxes()){
+                    if (ap.baseEquals(vb.getValue().toString())) {
+                        defSet.add(u);
+                    }
+                }
+            } else if (def.getValue() instanceof ArrayRef) {
+                Value v = ((ArrayRef) def.getValue()).getBase();
+                if (ap.baseEquals(v.toString())) {
+                    defSet.add(u);
                 }
             }
-            for (ValueBox def: u.getUnit().getDefBoxes()) {
-                if(def.getValue() instanceof Local) {
-                    if (ap.baseEquals(def.getValue().toString())) {
-                        defSet.add(u);
-                        localFound = true;
-                        break;
+        }
+        if (u.getUnit() instanceof AssignStmt) {
+            Value right = ((AssignStmt) u.getUnit()).getRightOp();
+            if (right instanceof FieldRef) {
+                for (ValueBox vb: ((FieldRef) right).getUseBoxes()){
+                    if (ap.baseEquals(vb.getValue().toString())) {
+                        if (prevUnit != null && frameworkModel && traversal.isFrameworkMethod(prevUnit)) {
+                            Value left = ((AssignStmt) u.getUnit()).getLeftOp();
+                            AccessPath leftAp = new AccessPath(left.toString(), left.getType(), AccessPath.NOT_USED, u.getLineNo(), u);
+                            if (FrameworkModel.localWrapper(prevUnit, leftAp, defSet, usedVars)) {
+                                // pass
+                            }
+                        }
                     }
-                } else if (def.getValue() instanceof FieldRef){
-                    for (ValueBox vb: ((FieldRef) def.getValue()).getUseBoxes()){
-                        if (ap.baseEquals(vb.getValue().toString())) {
+                }
+            }
+        }
+        InvokeExpr invokeExpr = AnalysisUtils.getCallerExp(u);
+        AnalysisLogger.log(Constants.DEBUG, "Invoke expr {}", invokeExpr);
+        if (invokeExpr != null) {
+            if (!traversal.isFrameworkMethod(u)) {
+                if (! (((Stmt) u.getUnit()) instanceof AssignStmt)) {
+                    if (invokeExpr != null && !invokeExpr.getMethod().isStatic()) {
+                        if (ap.baseEquals(((InstanceInvokeExpr) invokeExpr).getBase().toString())){
                             defSet.add(u);
                         }
                     }
-                } else if (def.getValue() instanceof ArrayRef) {
-                    Value v = ((ArrayRef) def.getValue()).getBase();
-                    if (ap.baseEquals(v.toString())) {
-                        defSet.add(u);
-                    }
+                }
+            } else if (frameworkModel) {
+                if (FrameworkModel.localWrapper(u, ap, defSet, usedVars)) {
+                    // pass
                 }
             }
-            if (u.getUnit() instanceof AssignStmt) {
-                Value right = ((AssignStmt) u.getUnit()).getRightOp();
-                if (right instanceof FieldRef) {
-                    for (ValueBox vb: ((FieldRef) right).getUseBoxes()){
-                        if (ap.baseEquals(vb.getValue().toString())) {
-                            if (prevUnit != null && frameworkModel && traversal.isFrameworkMethod(prevUnit)) {
-                                Value left = ((AssignStmt) u.getUnit()).getLeftOp();
-                                AccessPath leftAp = new AccessPath(left.toString(), left.getType(), AccessPath.NOT_USED, u.getLineNo(), u);
-                                if (FrameworkModel.localWrapper(prevUnit, leftAp, defSet, usedVars)) {
-                                    // pass
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            InvokeExpr invokeExpr = AnalysisUtils.getCallerExp(u);
-            AnalysisLogger.log(Constants.DEBUG, "Invoke expr {}", invokeExpr);
-            if (invokeExpr != null) {
-                if (!traversal.isFrameworkMethod(u)) {
-                    if (! (((Stmt) u.getUnit()) instanceof AssignStmt)) {
-                        if (invokeExpr != null && !invokeExpr.getMethod().isStatic()) {
-                            if (ap.baseEquals(((InstanceInvokeExpr) invokeExpr).getBase().toString())){
-                                defSet.add(u);
-                            }
-                        }
-                    }
-                } else if (frameworkModel) {
-                    if (FrameworkModel.localWrapper(u, ap, defSet, usedVars)) {
-                        // pass
-                    }
-                }
-            }
-            if (invokeExpr != null && !traversal.isFrameworkMethod(u) && defsInCalled == null) {
-                AliasSet aliasesInCalled = traversal.changeScopeToCalled(u, new AliasSet(ap)).getO1();
+        }
+        if (invokeExpr != null && !traversal.isFrameworkMethod(u) && defsInCalled != null) {
+            AliasSet aliasesInCalled = traversal.changeScopeToCalled(u, new AliasSet(ap)).getO1();
+            Pair<Integer, Boolean> searchResult = traversal.searchForMethod(u.getLineNo());
+            if(searchResult.getO2()){
+                LazyStatementMap calledChunk = traversal.getForwardLazyChunk(searchResult.getO1());
                 for (AccessPath varInCalled: aliasesInCalled) {
-                    StatementMap calledChunk = traversal.getCalledChunk(u.getLineNo()).getChunk();
-                    defsInCalled = localReachingDef(iu, varInCalled, calledChunk, usedVars, frameworkModel);
+    //                StatementMap calledChunk = traversal.getCalledChunk(u.getLineNo()).getChunk();
+    //                defsInCalled.addAll(localReachingDef(iu, varInCalled, calledChunk, usedVars, frameworkModel));
+    //                defSet.addAll(defsInCalled);
+                    defsInCalled.addAll(localReachingDefLazyCached(iu, varInCalled, calledChunk, usedVars, frameworkModel));
                     defSet.addAll(defsInCalled);
                 }
             }
-            prevUnit = u;
-            //processed.put(new Pair<>(u, ap.getBase().getO1()), new Pair<>(defSet, usedVars));
         }
-        if (defSet.isEmpty()) {
-            defSet.addAll(getReachingInCaller(iu, ap));
-        }
-        // defSet = localReachingDefForward(backwardDefVars, defSet);
-        // AnalysisLogger.log(Constants.DEBUG, "Defs with forward are: {}", defSet);
-
-        processed.add(new Pair<>(iu, ap.getBase().getO1()));
-        return defSet;
+        return localFound;
     }
 
     private StatementSet localReachingDefForward(Set<Pair<StatementInstance, AccessPath>> backwardDefVars, StatementSet defSet) {
@@ -483,6 +564,45 @@ public class SliceMethod {
         }
     }
 
+//    public StatementSet getReachingInCaller(StatementInstance iu, AccessPath ap) throws Error {
+//        StatementSet defSet = new StatementSet();
+//        int callerPos = traversal.getCaller(iu.getLineNo());
+//        AliasSet apSet = new AliasSet();
+//        apSet.add(ap);
+//        AliasSet taintedParams = traversal.changeScopeToCaller(iu, icdg.mapNoUnits(callerPos), apSet);
+//        if (taintedParams == null || taintedParams.isEmpty()) {
+//            return defSet;
+//        }
+//        if (taintedParams.size() > 1) {
+//            throw new Error("More than one definition of a local variable!");
+//        }
+//        ap = taintedParams.iterator().next();
+//        LazyStatementMap callerChunk = traversal.getLazyChunk(callerPos);
+//        AliasSet usedVars = new AliasSet();
+//        return localReachingDefLazyCached(icdg.mapNoUnits(callerPos), ap, callerChunk, usedVars, false);
+//    }
+
+public StatementSet getReachingInCallerNew(StatementInstance iu, AccessPath ap) throws Error {
+    StatementSet defSet = new StatementSet();
+    int callerPos = traversal.getCaller(iu.getLineNo());
+    AliasSet apSet = new AliasSet();
+    apSet.add(ap);
+    AliasSet taintedParams = traversal.changeScopeToCaller(iu, icdg.mapNoUnits(callerPos), apSet);
+    if (taintedParams == null || taintedParams.isEmpty()) {
+        return defSet;
+    }
+    if (taintedParams.size() > 1) {
+        throw new Error("More than one definition of a local variable!");
+    }
+    StatementInstance nextCaller = icdg.mapNoUnits(callerPos);
+    ap = taintedParams.iterator().next();
+    LazyStatementMap callerChunk = traversal.getLazyChunk(callerPos);
+    if (nextCaller != null && !nextCaller.equals(iu)) {
+        return localReachingDefLazyCached(nextCaller, ap, callerChunk, apSet, true);
+    }
+    return defSet;
+}
+
     public StatementSet getReachingInCaller(StatementInstance iu, AccessPath ap) throws Error {
         StatementSet defSet = new StatementSet();
         int callerPos = traversal.getCaller(iu.getLineNo());
@@ -498,9 +618,11 @@ public class SliceMethod {
         StatementInstance nextCaller = null;
         ap = taintedParams.iterator().next();
         LazyStatementMap callerChunk = traversal.getLazyChunk(callerPos);
+        boolean foundLocalDef = false;
         for (StatementInstance u: callerChunk) {
             if(u == null){
-                return defSet;
+                nextCaller = u;
+                break;
             }
             if (u.getLineNo()==callerPos) {
                 nextCaller = u;
@@ -510,28 +632,27 @@ public class SliceMethod {
             }
             nextCaller = u;
 
-            boolean foundLocalDef = findLocalDefs(ap, defSet, u);
-
+            foundLocalDef = findLocalDefs(ap, defSet, u);
             if (foundLocalDef) {
-                return defSet;
+                break;
             }
-
             foundLocalDef = findLocalDefInFrameworkMethod(ap, defSet, u, foundLocalDef);
 
             if (foundLocalDef) {
-                return defSet;
+                break;
+            }
+            Pair<StatementInstance, String> curProcess = new Pair<>(u, ap.getBase().getO1());
+            if(processed.containsKey(curProcess)){
+                foundLocalDef = true;
+                break;
+                //defSet.addAll(processed.get(curProcess).getO1());
             }
         }
-        
-        if (nextCaller != null && nextCaller.equals(iu)) {
+
+        if (nextCaller != null && nextCaller.equals(iu) || foundLocalDef || nextCaller == null) {
             return defSet;
         }
-        if (nextCaller != null) {
-            return getReachingInCaller(nextCaller, ap);
-        } else {
-            return defSet;
-        }
-        
+        return getReachingInCaller(nextCaller, ap);
     }
 
     public boolean findLocalDefInFrameworkMethod(AccessPath ap, StatementSet defSet, StatementInstance u, boolean foundLocalDef)

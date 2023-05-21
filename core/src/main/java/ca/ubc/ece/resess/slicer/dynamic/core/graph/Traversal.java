@@ -106,7 +106,8 @@ public class Traversal {
     public LazyStatementMap getLazyChunk(StatementInstance iu) {
         LazyStatementMap chunk=null;
         if (iu.isReturn()) {
-            StatementMap retChunk = iu.getReturnChunk();
+            //StatementMap retChunk = iu.getReturnChunk();
+            StatementMap retChunk = null;
             if (retChunk == null) {
                 chunk = getLazyChunk(iu.getLineNo());
             } else {
@@ -127,7 +128,7 @@ public class Traversal {
         if (iu == null) {
             return null;
         }
-        LazyStatementMap lazyChunk = new LazyStatementMap( iu, icdg, this::previousFlowEdge, analysisCache );
+        LazyStatementMap lazyChunk = new LazyStatementMap( iu, icdg, false, this::previousFlowEdge, analysisCache );
         return lazyChunk;
     }
 
@@ -163,6 +164,19 @@ public class Traversal {
             }
         }
         return null;
+    }
+
+    public LazyStatementMap getForwardLazyChunk(int pos) {
+//        LazyStatementMap cachedChunk = analysisCache.getFromLazyChunkCache( pos );
+//        if (cachedChunk != null) {
+//            return cachedChunk;
+//        }
+        StatementInstance iu = icdg.mapNoUnits( pos );
+        if (iu == null) {
+            return null;
+        }
+        LazyStatementMap lazyChunk = new LazyStatementMap( iu, icdg, true, this::nextFlowEdge, analysisCache );
+        return lazyChunk;
     }
 
     public StatementMap getForwardChunk(int pos) {
@@ -276,7 +290,7 @@ public class Traversal {
     }
 
 
-    private Pair<Integer, Boolean> searchForMethod(int pos) {
+    public Pair<Integer, Boolean> searchForMethod(int pos) {
         Pair<Integer, Boolean> searchResult = new Pair<>();
         List<Integer> successors = icdg.successorListOf(pos);
         searchResult.setO1(pos);

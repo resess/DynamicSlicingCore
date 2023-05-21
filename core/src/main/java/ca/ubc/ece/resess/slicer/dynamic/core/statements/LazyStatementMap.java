@@ -12,9 +12,10 @@ public class LazyStatementMap implements Iterable<StatementInstance> {
     private DynamicControlFlowGraph icdg;
     private String currentMethod;
     private Function<Integer, Integer> nextEdgeFunction;
+    boolean isForward;
     private AnalysisCache analysisCache;
 
-    public LazyStatementMap( StatementInstance startIu, DynamicControlFlowGraph icdg,
+    public LazyStatementMap( StatementInstance startIu, DynamicControlFlowGraph icdg, boolean isForward,
                              Function<Integer, Integer> nextEdgeFunction, AnalysisCache analysisCache ){
         this.currentMethod = startIu.getMethod().getSignature();
         this.startPos = startIu.getLineNo();
@@ -22,6 +23,7 @@ public class LazyStatementMap implements Iterable<StatementInstance> {
         this.icdg = icdg;
         this.nextEdgeFunction = nextEdgeFunction;
         this.analysisCache = analysisCache;
+        this.isForward = isForward;
     }
 
     public LazyStatementMap(StatementMap builtChunk){
@@ -102,7 +104,7 @@ public class LazyStatementMap implements Iterable<StatementInstance> {
                     // try cache
                     nextPos();
                     LazyStatementMap cached = analysisCache.getFromLazyChunkCache( curPos );
-                    if(cached != null){
+                    if(cached != null && cached.isForward == LazyStatementMap.this.isForward){
                         curTraverse = cached;
                         curChunkPos = cached.internalChunk.values().iterator();
                         curChunkIndex = 0;

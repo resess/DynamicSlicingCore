@@ -31,6 +31,7 @@ import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Symbol;
 public class Parser {
 
     private static final String DELEMITER = ":ZZZ:";
+    private static final HashMap<Long, Long> sourceLineMap = new HashMap<>();
 
 
     private Parser() {
@@ -176,11 +177,14 @@ public class Parser {
                 Long lineNum = Long.valueOf((String) bb);
                 Object[] linesInBB = ((JSONArray) methodBody.get(bb)).toArray();
                 ArrayList<String> expandedBody = new ArrayList<>();
-                for (Object line: linesInBB) {
+                Long sourceLine = (Long) linesInBB[1];
+                for (int i=0; i<linesInBB.length; i+=2){
+                    String line = (String) linesInBB[i];
                     String payload = lineNum + DELEMITER + methodName + DELEMITER + ((String) line);
                     expandedBody.add(payload);
                 }
                 logMap.put(lineNum, expandedBody);
+                sourceLineMap.put(lineNum, sourceLine);
             }
         }
     }
@@ -204,6 +208,7 @@ public class Parser {
                 String method = tokens[1];
                 String instruction = tokens[2];
                 Statement statement = Statement.getStatement(lineNumber, method, instruction);
+                tr.setSourceLine(sourceLineMap.get(lineNumber));
                 tr.setStatement(statement);
                 tr.setThreadId(Long.valueOf(tokens[3]));
                 if(tokens.length > 4) {
