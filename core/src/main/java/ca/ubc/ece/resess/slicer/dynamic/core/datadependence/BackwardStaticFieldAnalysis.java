@@ -6,9 +6,11 @@ import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.framework.FrameworkModel;
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.DynamicControlFlowGraph;
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.Traversal;
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.LazyStatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementSet;
+import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisLogger;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.Constants;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 import soot.Unit;
@@ -19,6 +21,8 @@ import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.InvokeExpr;
 import soot.jimple.Stmt;
 import soot.toolkits.scalar.Pair;
+
+import java.util.HashSet;
 
 public class BackwardStaticFieldAnalysis {
     private StatementInstance startUnit;
@@ -37,8 +41,10 @@ public class BackwardStaticFieldAnalysis {
 
     public void run() {
         AliasSet taintSet = new AliasSet();
+        AnalysisLogger.log(Constants.DEBUG, "Running backward traversal");
         boolean found = findBackwards(taintSet);
         if (!found) {
+            AnalysisLogger.log(Constants.DEBUG, "Running forward traversal");
             findForward(taintSet);
         }
     }
@@ -104,21 +110,22 @@ public class BackwardStaticFieldAnalysis {
 
     private boolean matchReferenceVaraibleDefintion(StatementInstance possibleIu, String fieldName, Value left, Value right) {
         String usedField = ((FieldRef) right).getField().getName();
-        StatementMap chunk = traversal.getForwardChunk(possibleIu.getLineNo());
-        for (StatementInstance prev: chunk.values()) {
+        LazyStatementMap chunk = traversal.getForwardLazyChunk(possibleIu.getLineNo());
+        if(!usedField.equals(fieldName)){
+            return false;
+        }
+        for (StatementInstance prev: chunk) {
             if (prev.getLineNo() <= possibleIu.getLineNo()) {
                 continue;
             }
-            if (usedField.equals(fieldName)) {
-                Stmt prevStmt = (Stmt) prev.getUnit();
-                if (prevStmt.containsInvokeExpr() && traversal.isFrameworkMethod(prev)) {
-                    InvokeExpr expr = prevStmt.getInvokeExpr();
-                    if (expr instanceof InstanceInvokeExpr) {
-                        AccessPath instance = new AccessPath(left.toString(), left.getType(), startUnit.getLineNo(), startUnit.getLineNo(), startUnit);
-                        if (FrameworkModel.definesInstance(prev, instance)) {
-                            aliasPath.add(prev);
-                            return true;
-                        }
+            Stmt prevStmt = (Stmt) prev.getUnit();
+            if (prevStmt.containsInvokeExpr() && traversal.isFrameworkMethod(prev)) {
+                InvokeExpr expr = prevStmt.getInvokeExpr();
+                if (expr instanceof InstanceInvokeExpr) {
+                    AccessPath instance = new AccessPath(left.toString(), left.getType(), startUnit.getLineNo(), startUnit.getLineNo(), startUnit);
+                    if (FrameworkModel.definesInstance(prev, instance)) {
+                        aliasPath.add(prev);
+                        return true;
                     }
                 }
             }

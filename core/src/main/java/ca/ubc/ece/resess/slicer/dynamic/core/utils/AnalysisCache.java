@@ -7,6 +7,7 @@ import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AccessPath;
 import ca.ubc.ece.resess.slicer.dynamic.core.accesspath.AliasSet;
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.CalledChunk;
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.CallerContext;
+import ca.ubc.ece.resess.slicer.dynamic.core.statements.LazyStatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementSet;
@@ -22,6 +23,7 @@ public class AnalysisCache {
     private Map<Integer, Integer> callerCache = new HashMap<>();
     private Map<Integer, StatementMap> bwChunkCache = new HashMap<>();
     private Map<Integer, StatementMap> fwChunkCache = new HashMap<>();
+    private Map<Integer, LazyStatementMap> lazyChunkCache = new HashMap<>();
     private Map<Pair<StatementInstance, AccessPath>, Set<CallerContext>> nextCallbackCache = new HashMap<>();
     private Map<StatementInstance, CallerContext> callerForwardChunk = new HashMap<>();
     private Map<StatementInstance, StatementInstance> previousCallbackCache = new HashMap<>();
@@ -33,6 +35,7 @@ public class AnalysisCache {
         callerCache = new HashMap<>();
         bwChunkCache = new HashMap<>();
         fwChunkCache = new HashMap<>();
+        lazyChunkCache = new HashMap<>();
         nextCallbackCache = new HashMap<>();
         callerForwardChunk = new HashMap<>();
         previousCallbackCache = new HashMap<>();
@@ -45,6 +48,7 @@ public class AnalysisCache {
         callerCache = new HashMap<>();
         bwChunkCache = new HashMap<>();
         fwChunkCache = new HashMap<>();
+        lazyChunkCache = new HashMap<>();
         nextCallbackCache = new HashMap<>();
         callerForwardChunk = new HashMap<>();
         previousCallbackCache = new HashMap<>();
@@ -91,7 +95,7 @@ public class AnalysisCache {
     public synchronized void putInNextCallbackCache(StatementInstance k, AccessPath ap, Set<CallerContext> v){
         nextCallbackCache.put(new Pair<>(k, ap), v);
     }
-    
+
     public Integer getFromCallerCache(int pos) {
         return callerCache.get(pos);
     }
@@ -115,7 +119,15 @@ public class AnalysisCache {
     public synchronized void putInFwChunkCache(int pos, StatementMap chunk) {
         fwChunkCache.put(pos, chunk);
     }
-    
+
+    public LazyStatementMap getFromLazyChunkCache(int pos) {
+        return lazyChunkCache.get(pos);
+    }
+
+    public synchronized void putInLazyChunkCache(int pos, LazyStatementMap lazyChunk) {
+        lazyChunkCache.put(pos, lazyChunk);
+    }
+
     public synchronized AliasSet filterByAnalysisCache(StatementInstance iu, AliasSet as, Integer direction){
         Pair<StatementInstance, Integer> key = new Pair<>(iu, direction);
         if (!aliasAnalysisCache.containsKey(key)) {

@@ -1,16 +1,9 @@
 package ca.ubc.ece.resess.slicer.dynamic.core.slicer;
 
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import ca.ubc.ece.resess.slicer.dynamic.core.graph.EdgeType;
 import org.apache.commons.lang3.tuple.Triple;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -30,7 +23,11 @@ public class DynamicSlice
 
     private SimpleDirectedWeightedGraph<Integer, DefaultWeightedEdge> chopGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
     private Map<Integer, Integer> methodOfStatement = new LinkedHashMap<>();
-    private Set<Triple<Integer, Integer, String>> edgeTypes = new LinkedHashSet<>();
+    enum EdgeType {
+        data,
+        control
+    };
+    private Map<EdgeType, Set<Pair<Integer, Integer>>> edgeTypes = new HashMap<>();
     class OrderedSlice extends ArrayList<Pair<StatementInstance, AccessPath>> {
 
         private static final long serialVersionUID = 7286928364073066546L;
@@ -42,6 +39,9 @@ public class DynamicSlice
 
     public DynamicSlice(){
         super();
+        for(EdgeType e : EdgeType.values()){
+            edgeTypes.put(e, new HashSet<>());
+        }
         // String s = "";
         // for (StackTraceElement ste: Thread.currentThread().getStackTrace())  {
         //     s += ste.toString();
@@ -49,31 +49,34 @@ public class DynamicSlice
         // AnalysisLogger.log(true, "Called at {}", s);
     }
 
+    public DynamicSlice(Collection<Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>>> collection){
+        super( collection );
+        for(EdgeType e : EdgeType.values()){
+            edgeTypes.put(e, new HashSet<>());
+        }
+    }
+
     public boolean hasEdge(Integer src, Integer dst, String edgeType) {
         // AnalysisLogger.log(true, "Checking edge: {}-{}-{}", src, dst, edgeType);
-        if (edgeTypes.contains(Triple.of(src, dst, edgeType))) {
-            // AnalysisLogger.log(true, "Found it!");
-            return true;
-        }
-        return false;
+        // AnalysisLogger.log(true, "Found it!");
+        return edgeTypes.get(EdgeType.valueOf(edgeType)).contains(new Pair<>(src, dst));
     }
 
     public String getEdges(Integer src, Integer dst) {
-        String edges = "";
-        if (edgeTypes.contains(Triple.of(src, dst, "data"))) {
-            edges += "data";
+        StringBuilder edges = new StringBuilder();
+        for(EdgeType e : EdgeType.values()){
+            if(edgeTypes.get(e).contains(new Pair<>(src, dst))){
+                edges.append(e.toString());
+            }
         }
-        if (edgeTypes.contains(Triple.of(src, dst, "control"))) {
-            edges += "control";
-        }
-        return edges;
+        return edges.toString();
     }
 
     public boolean add(Pair<StatementInstance, AccessPath> key,
             Pair<StatementInstance, AccessPath> value, String edgeType) {
-                edgeTypes.add(Triple.of(key.getO1().getLineNo(), value.getO1().getLineNo(), edgeType));
-                // AnalysisLogger.log(true, "Added edge: {}-{}-{}", key.getO1().getLineNo(), value.getO1().getLineNo(), edgeType);
-                return this.add(key, value);
+        edgeTypes.get(EdgeType.valueOf(edgeType)).add(new Pair<>(key.getO1().getLineNo(), value.getO1().getLineNo()));
+        // AnalysisLogger.log(true, "Added edge: {}-{}-{}", key.getO1().getLineNo(), value.getO1().getLineNo(), edgeType);
+        return this.add(key, value);
     }
 
     @Override
@@ -288,30 +291,18 @@ public class DynamicSlice
         return sliceLines;
     }
 
-    public DynamicSlice union(DynamicSlice other) {
-        DynamicSlice unionSlice = new DynamicSlice();
-        unionSlice.addAll(this);
-        unionSlice.addAll(other);
-        for (Integer v: chopGraph.vertexSet()) {
-            unionSlice.chopGraph.addVertex(v);
-        }
-        for (DefaultWeightedEdge e: chopGraph.edgeSet()) {
-            Graphs.addEdgeWithVertices(unionSlice.chopGraph, chopGraph, e);
-        }
+    public void union(DynamicSlice other) {
+        this.addAll(other);
         for (Integer v: other.chopGraph.vertexSet()) {
-            unionSlice.chopGraph.addVertex(v);
+            this.chopGraph.addVertex(v);
         }
         for (DefaultWeightedEdge e: other.chopGraph.edgeSet()) {
-            Graphs.addEdgeWithVertices(unionSlice.chopGraph, other.chopGraph, e);
+            Graphs.addEdgeWithVertices(this.chopGraph, other.chopGraph, e);
         }
-        
-        unionSlice.methodOfStatement.putAll(methodOfStatement);
-        unionSlice.methodOfStatement.putAll(other.methodOfStatement);
 
-        unionSlice.edgeTypes.addAll(edgeTypes);
-        unionSlice.edgeTypes.addAll(other.edgeTypes);
-
-        return unionSlice;
+        this.methodOfStatement.putAll(other.methodOfStatement);
+        //this.edgeTypes.addAll(other.edgeTypes);
+        return;
     }
 }
 

@@ -7,6 +7,7 @@ import ca.ubc.ece.resess.slicer.dynamic.core.statements.Statement;
 public class TraceStatement implements Serializable {
     private long fieldAddr = -1L;
     private long threadId;
+    private long sourceLine;
     private Statement statement;
 
     @Override
@@ -20,6 +21,10 @@ public class TraceStatement implements Serializable {
 
     public void setStatement(Statement statement) {
       this.statement = statement;
+    }
+
+    public void setSourceLine(Long sourceLine) {
+        this.sourceLine = sourceLine;
     }
 
     public void setFieldAddr(Long fieldAddr) {
@@ -36,6 +41,10 @@ public class TraceStatement implements Serializable {
 
     public Long getLineNumber() {
         return statement.getLineNumber();
+    }
+
+    public Long getSourceLine() {
+        return sourceLine;
     }
 
     public String getMethod() {
