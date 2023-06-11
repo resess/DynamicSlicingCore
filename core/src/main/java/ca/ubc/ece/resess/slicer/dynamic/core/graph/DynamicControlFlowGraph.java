@@ -230,7 +230,6 @@ public class DynamicControlFlowGraph extends Graph{
                         potentialUnit = units.get(0);
                     } else {
                         int idx = getClosestUnitByLineNumber(units, Math.toIntExact(traceStatement.getSourceLine()));
-                        //int idx = getClosestUnitByLineNumber(units, prevLine);
                         potentialUnit = units.get(idx);
                     }
                     int curDistance = Math.abs(Math.toIntExact(traceStatement.getSourceLine()) - potentialUnit.getJavaSourceStartLineNumber());

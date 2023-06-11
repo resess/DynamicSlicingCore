@@ -26,8 +26,7 @@ public class AccessPath {
     private static final String TERMINATOR = "*";
     public static final int NOT_DEFINED = -1;
     public static final int NOT_USED = -1;
-    public static HashMap<Integer, Set<AccessPath>> usedVarsAtLine = new HashMap<>();
-    
+
     public AccessPath(int usedAt, int definedAt, StatementInstance si){
         setPath(new ArrayList<>());
         setClassPath(new ArrayList<>());

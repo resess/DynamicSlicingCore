@@ -110,7 +110,6 @@ public class BackwardStaticFieldAnalysis {
 
     private boolean matchReferenceVaraibleDefintion(StatementInstance possibleIu, String fieldName, Value left, Value right) {
         String usedField = ((FieldRef) right).getField().getName();
-        //StatementMap chunk = traversal.getForwardChunk(possibleIu.getLineNo()); // can be optimized
         LazyStatementMap chunk = traversal.getForwardLazyChunk(possibleIu.getLineNo());
         if(!usedField.equals(fieldName)){
             return false;

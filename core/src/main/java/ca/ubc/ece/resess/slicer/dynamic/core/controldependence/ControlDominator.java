@@ -38,15 +38,6 @@ public class ControlDominator{
         if (outOfMemMethods.contains(stmt.getMethod())) {
             return null;
         }
-        //ControlDomRunner cdr = new ControlDomRunner(stmt, lazyChunk, dcfg);
-//        Thread t = new Thread(cdr);
-//        try {
-//            t.start();
-//            t.join(30*1000);
-//            t.interrupt();
-//        } catch (InterruptedException e) {
-//            // pass
-//        }
         return getControlDom(stmt, lazyChunk, dcfg);
     }
 
@@ -165,7 +156,6 @@ public class ControlDominator{
             }
             if (!u.toString().contains(":= @caughtexception")) {
                 String unitString = u.toString() + "::" + u.getJavaSourceStartLineNumber();
-                //String unitString = u.toString();
                 mustFind.add(unitString);
             }
         }
@@ -175,7 +165,6 @@ public class ControlDominator{
             prev = icdg.mapNoUnits(newPos);
             if ((prev!=null) && !((prev.getUnit()) instanceof GotoStmt)) {
                 String unitString = prev.getUnit().toString() + "::" + prev.getJavaSourceLineNo();
-                //String unitString = prev.getUnit().toString();
                 if (mustFind.isEmpty()) {
                     return prev;
                 } else if (mustFind.contains(unitString)) {

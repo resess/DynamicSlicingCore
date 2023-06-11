@@ -10,7 +10,6 @@ import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementInstance;
 import ca.ubc.ece.resess.slicer.dynamic.core.statements.StatementMap;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisCache;
 import ca.ubc.ece.resess.slicer.dynamic.core.utils.AnalysisUtils;
-import com.kitfox.svg.A;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.AssignStmt;
@@ -104,19 +103,7 @@ public class Traversal {
     }
 
     public LazyStatementMap getLazyChunk(StatementInstance iu) {
-        LazyStatementMap chunk=null;
-        if (iu.isReturn()) {
-            //StatementMap retChunk = iu.getReturnChunk();
-            StatementMap retChunk = null;
-            if (retChunk == null) {
-                chunk = getLazyChunk(iu.getLineNo());
-            } else {
-                chunk = new LazyStatementMap(retChunk);
-            }
-        } else {
-            chunk = getLazyChunk(iu.getLineNo());
-        }
-        return chunk;
+        return getLazyChunk(iu.getLineNo());
     }
 
     public LazyStatementMap getLazyChunk(int pos) {
@@ -167,10 +154,6 @@ public class Traversal {
     }
 
     public LazyStatementMap getForwardLazyChunk(int pos) {
-//        LazyStatementMap cachedChunk = analysisCache.getFromLazyChunkCache( pos );
-//        if (cachedChunk != null) {
-//            return cachedChunk;
-//        }
         StatementInstance iu = icdg.mapNoUnits( pos );
         if (iu == null) {
             return null;

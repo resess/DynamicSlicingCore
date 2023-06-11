@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.kitfox.svg.A;
 import soot.Value;
 import soot.jimple.AssignStmt;
 import soot.jimple.Constant;
@@ -337,40 +336,6 @@ public class FrameworkModel {
                 defintionFound = localReturnToParamFlow(si, ap, defSet, usedVars, defintionFound, invokeExpr, frameworkAssignment);
             } else if (frameworkAssignment.leftType.equals(VariableType.INSTANCE) && !invokeExpr.getMethod().isStatic()) {
                 defintionFound = localReferenceToParamFlow(si, ap, defSet, usedVars, defintionFound, invokeExpr, frameworkAssignment);
-            }
-        }
-        return defintionFound;
-    }
-
-    public static boolean getUsedVars(StatementInstance si, AliasSet usedVars){
-        boolean defintionFound = false;
-        InvokeExpr invokeExpr = AnalysisUtils.getCallerExp(si);
-        if (invokeExpr == null) {
-            return false;
-        }
-        if (si.getUnit() instanceof IfStmt) {
-            return false;
-        }
-        Set<FrameworkAssignment> model = convertMethod(invokeExpr);
-        for (FrameworkAssignment frameworkAssignment: model) {
-            if (frameworkAssignment.leftType.equals(VariableType.PARAM)) {
-                List<Value> args = invokeExpr.getArgs();
-                for(int argPos = 0; argPos < args.size(); argPos++) {
-                    if (frameworkAssignment.leftParam == argPos) {
-                        usedVars.add(frameworkAssignment.getRightAccessPath(invokeExpr, si.getLineNo(), si));
-                        usedVars.add(frameworkAssignment.getLeftParamAccessPath(invokeExpr, si.getLineNo(), si));
-                    }
-                }
-            } else if (frameworkAssignment.leftType.equals(VariableType.RETURN)) {
-                if ((si.getUnit() instanceof AssignStmt)) {
-                    AccessPath ap = new AccessPath(((AssignStmt) si.getUnit()).getLeftOp().toString(), ((AssignStmt) si.getUnit()).getLeftOp().getType(), si.getLineNo(), AccessPath.NOT_DEFINED, si);
-                    usedVars.add(ap);
-                }
-                usedVars.add(frameworkAssignment.getRightAccessPath(invokeExpr, si.getLineNo(), si));
-            } else if (frameworkAssignment.leftType.equals(VariableType.INSTANCE) && !invokeExpr.getMethod().isStatic()) {
-                AccessPath ap = new AccessPath(((InstanceInvokeExpr) invokeExpr).getBase().toString(), ((InstanceInvokeExpr) invokeExpr).getBase().getType(), si.getLineNo(), AccessPath.NOT_DEFINED, si);
-                usedVars.add(ap);
-                usedVars.add(frameworkAssignment.getRightAccessPath(invokeExpr, si.getLineNo(), si));
             }
         }
         return defintionFound;
