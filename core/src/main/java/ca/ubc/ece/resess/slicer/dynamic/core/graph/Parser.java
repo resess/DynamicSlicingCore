@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Base64;
 import java.io.OutputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.InflaterOutputStream;
 
 import ca.ubc.ece.resess.slicer.dynamic.core.graph.sequitur.Rule;
@@ -189,6 +191,21 @@ public class Parser {
         }
     }
 
+    static String removeTmpFromGotoInstruction( String instruction, Map<Long, List<String>> logMap ){
+        if( !(instruction.contains("goto") && instruction.contains("tmpString") ) ) {
+            return instruction;
+        }
+
+        String ret;
+        Pattern p = Pattern.compile("tmpString = \"(\\d+)\"");
+        Matcher m = p.matcher(instruction);
+        assert( m.find() );
+        long gotoLineNum = Integer.parseInt(m.group(1));
+        String gotoInstruction = logMap.get(gotoLineNum).get(0).split(DELEMITER)[2];
+        ret = instruction.replaceAll("tmpString = \"\\d+\"", Matcher.quoteReplacement(gotoInstruction));
+        return removeTmpFromGotoInstruction( ret, logMap );
+    }
+
     protected static void addToExpandedTrace(Trace listTraces, Map<Long, List<String>> logMap, long lineNum,
             long threadNum, int fieldId, Map<String, List<TraceStatement>> traceCache) {
         
@@ -204,9 +221,10 @@ public class Parser {
                 String [] tokens = line.split(DELEMITER);
                 TraceStatement tr = new TraceStatement();
                 if(tokens.length < 4) continue;
-                long lineNumber = Long.valueOf(tokens[0]);
+                long lineNumber = Long.parseLong(tokens[0]);
                 String method = tokens[1];
                 String instruction = tokens[2];
+                //instruction = removeTmpFromGotoInstruction(instruction, logMap);
                 Statement statement = Statement.getStatement(lineNumber, method, instruction);
                 tr.setSourceLine(sourceLineMap.get(lineNumber));
                 tr.setStatement(statement);

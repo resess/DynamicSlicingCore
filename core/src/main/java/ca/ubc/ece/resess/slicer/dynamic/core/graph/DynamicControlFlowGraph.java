@@ -206,6 +206,7 @@ public class DynamicControlFlowGraph extends Graph{
                     TraceStatement traceStatement, int lineNumber) {
 
         int leastDistance = Integer.MAX_VALUE;
+        int lineDistance = Integer.MAX_VALUE;
         String second = traceStatement.getInstruction();
         Unit closestUnit = null;
         for(String us: unitString.keySet()) {
@@ -222,16 +223,22 @@ public class DynamicControlFlowGraph extends Graph{
                 if (distance == -1) {
                     distance = threshold;
                 }
-                if (distance < leastDistance) {
+                if (distance <= leastDistance) {
                     List<Unit> units = unitString.get(us);
+                    Unit potentialUnit;
                     if (units.size() == 1) {
-                        closestUnit = units.get(0);
+                        potentialUnit = units.get(0);
                     } else {
-                        //int idx = getClosestUnitByLineNumber(units, Math.toIntExact(traceStatement.getSourceLine()));
-                        int idx = getClosestUnitByLineNumber(units, prevLine);
-                        closestUnit = units.get(idx);
+                        int idx = getClosestUnitByLineNumber(units, Math.toIntExact(traceStatement.getSourceLine()));
+                        //int idx = getClosestUnitByLineNumber(units, prevLine);
+                        potentialUnit = units.get(idx);
                     }
-                    leastDistance = distance;
+                    int curDistance = Math.abs(Math.toIntExact(traceStatement.getSourceLine()) - potentialUnit.getJavaSourceStartLineNumber());
+                    if(curDistance < lineDistance){
+                        closestUnit = potentialUnit;
+                        leastDistance = distance;
+                        lineDistance = curDistance;
+                    }
                 }
             }
         }

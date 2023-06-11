@@ -268,7 +268,6 @@ public class SliceMethod {
 
         lazyChunkIt = lazyChunk.iterator();
         boolean localFound = false;
-        StatementInstance prevUnit = null;
         HashMap<StatementInstance, StatementSet> localDefs = new HashMap<>();
         while(lazyChunkIt.hasNext()){
             StatementInstance u = lazyChunkIt.next();
@@ -287,9 +286,7 @@ public class SliceMethod {
             }
             StatementSet localDefSet = new StatementSet();
             localFound = findLocalDef(iu, ap, localDefSet, caller, u, usedVars, defsInCalled);
-
             localDefs.put(u, localDefSet);
-            prevUnit = u;
 
             Pair<StatementInstance, String> curProcess = new Pair<>(u, ap.getBase().getO1());
             if(processed.containsKey(curProcess)){
