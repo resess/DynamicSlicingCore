@@ -38,6 +38,16 @@ public class StatementSet extends LinkedHashSet<StatementInstance> {
         return ret;
     }
 
+    public StatementInstance getLargestStatement() {
+        StatementInstance maxState = null;
+        for (StatementInstance iu : this) {
+            if(maxState == null || maxState.getLineNo() < iu.getLineNo()){
+                maxState = iu;
+            }
+        }
+        return maxState;
+    }
+
     public StatementSet reorder() {
         StatementSet ordered = new StatementSet();
         List<StatementInstance> orderedList = new ArrayList<>();

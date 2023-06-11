@@ -38,7 +38,8 @@ public class SlicingWorkingSet extends ArrayDeque<Pair<StatementInstance, Access
         this.stopSlicing = stopSlicing;
     }
 
-    public DynamicSlice getDynamicSlice() {
+    public DynamicSlice
+    getDynamicSlice() {
         return dynamicSlice;
     }
 
@@ -56,6 +57,7 @@ public class SlicingWorkingSet extends ArrayDeque<Pair<StatementInstance, Access
     public synchronized void add(StatementInstance iu, AccessPath var, Pair<StatementInstance, AccessPath> source, String edgeType){
         Pair<StatementInstance, AccessPath> frontier = new Pair<>(iu, var);
         String frontierLine = iu.getLineNo() +":"+ var.getPathString();
+
         if (!this.stopSlicing) {
             if (!isVisited(frontierLine)) {
                 AnalysisLogger.log(Constants.DEBUG, "Added to working set: {}", frontier);
@@ -97,6 +99,11 @@ public class SlicingWorkingSet extends ArrayDeque<Pair<StatementInstance, Access
 
     private boolean isVisited(String pos) {
         return visited.containsKey(pos);
+    }
+
+    public boolean isVisited(StatementInstance iu, AccessPath var) {
+        String frontierLine = iu.getLineNo() +":"+ var.getPathString();
+        return visited.containsKey(frontierLine);
     }
 
     public void addStmtOnly (StatementInstance si, Pair<StatementInstance, AccessPath> source, String edgeType){

@@ -76,9 +76,9 @@ public class StatementMap extends LinkedHashMap<String, StatementInstance> {
         });
 
         for (StatementInstance iu: orderedTrace){
-            if (iu.equals(startNode)) {
-                continue;
-            }
+//            if (iu.equals(startNode)) {
+//                continue;
+//            }
             reverseChunk.put(iu.toString(), iu);
         }
         return reverseChunk;

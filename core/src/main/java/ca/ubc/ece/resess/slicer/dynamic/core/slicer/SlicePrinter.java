@@ -212,29 +212,18 @@ public class SlicePrinter {
 
 
     public static void printSlices(DynamicSlice dynamicSlice) {
-        List<String> dynamicPrint = new ArrayList<>();
-        List<String> staticPrint = new ArrayList<>();
-        Set<String> staticSlice = new LinkedHashSet<>();
-        
+        AnalysisLogger.log(true, "Printing dynamic slice:");
+        for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: dynamicSlice) {
+            Pair<StatementInstance, AccessPath> iup = entry.getO1();
+            String toPrint = iup.toString() + "   from:" + entry.getO2();
+            AnalysisLogger.log(true, "{}", toPrint);
+        }
+        AnalysisLogger.log(true, "Printing static slice:");
         for(Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> entry: dynamicSlice) {
             Pair<StatementInstance, AccessPath> iup = entry.getO1();
             StatementInstance iu = iup.getO1();
-            dynamicPrint.add(iup.toString());
-            dynamicPrint.add("   from:" + entry.getO2());
-            String toPrint = iu.getMethod().getSignature() + ":" + iu.getUnit().getJavaSourceStartLineNumber() + "-" + iu.getUnit().getJavaSourceStartColumnNumber() + ":" + iu.getUnit().toString(); 
-            if (!staticSlice.contains(toPrint)) {
-                staticSlice.add(toPrint);
-                staticPrint.add(toPrint);
-                staticPrint.add("   from:" + entry.getO2());
-            }
-        }
-        AnalysisLogger.log(true, "Printing dynamic slice:");
-        for (String s: dynamicPrint) {
-            AnalysisLogger.log(true, "{}", s);
-        }
-        AnalysisLogger.log(true, "Printing static slice:");
-        for (String s: staticPrint) {
-            AnalysisLogger.log(true, "{}", s);
+            String toPrint = iu.getMethod().getSignature() + ":" + iu.getUnit().getJavaSourceStartLineNumber() + "-" + iu.getUnit().getJavaSourceStartColumnNumber() + ":" + iu.getUnit().toString();
+            AnalysisLogger.log(true, "{}", toPrint + "   from:" + entry.getO2());
         }
     }
 
@@ -257,7 +246,8 @@ public class SlicePrinter {
         printList.add("ID, Method, Class, Line, Source, Var");
         for (Pair<Pair<StatementInstance, AccessPath>, Pair<StatementInstance, AccessPath>> elem : dynamicSlice) {
             StatementInstance iu = elem.getO1().getO1();
-            int id = dynamicSlice.getOrder(elem.getO1());
+            //int id = dynamicSlice.getOrder(elem.getO1());
+            int id = -1;
             String method = iu.getMethod().getSubSignature().replace(',', ';');
             String clString = iu.getMethod().getDeclaringClass().getName().replace(',', ';');
             String sourceLineNo = getSourceLineNumber(iu);
@@ -266,7 +256,8 @@ public class SlicePrinter {
             if (!lines.contains(line)) {
                 lines.add(line);
                 Pair<StatementInstance, AccessPath> source = elem.getO2();
-                int sourceId = dynamicSlice.getOrder(source);
+                //int sourceId = dynamicSlice.getOrder(source);
+                int sourceId = -1;
                 String toPrint = String.valueOf(id) + ", " + line + ", " + sourceLineNo + ", " + sourceId + ", " + source.getO2().toString();
                 printList.add(toPrint);
             }
