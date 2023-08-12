@@ -618,7 +618,7 @@ public class DynamicControlFlowGraph extends Graph{
             stop = 0;
         }
 
-        for (int j = i-1; j >= stop; j--) {
+        for (int j = i-1; j >= 0; j--) {
             StatementInstance jIu = unitsInThread.get(j);
             if (jIu == null) {
                 return;
